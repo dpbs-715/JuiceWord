@@ -1,0 +1,102 @@
+:root {
+  color: #1f2937;
+  background: #fff9ed;
+  font-family: "Avenir Next", "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+body {
+  width: 320px;
+  margin: 0;
+}
+
+button {
+  font: inherit;
+}
+
+.jw-popup {
+  min-height: 220px;
+  padding: 18px;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 184, 0, 0.22), transparent 30%),
+    linear-gradient(145deg, #fffdf7, #fff4d7);
+}
+
+.jw-popup__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jw-logo {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 58% 42% 52% 48% / 64% 56% 44% 36%;
+  background: linear-gradient(145deg, #ffb800, #fff0a8);
+  box-shadow: 0 12px 22px rgba(255, 184, 0, 0.28);
+  color: #fff;
+  font-weight: 800;
+}
+
+.jw-popup h1 {
+  margin: 0;
+  color: #142033;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.jw-popup p {
+  margin: 3px 0 0;
+  color: #9a6500;
+  font-size: 13px;
+}
+
+.jw-popup__status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  padding: 14px;
+  border: 1px solid #ffe5a3;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 12px 30px rgba(255, 184, 0, 0.1);
+}
+
+.jw-popup__status span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.jw-popup__status .ready {
+  background: #10b981;
+}
+
+.jw-popup__status .pending {
+  background: #f59e0b;
+}
+
+.jw-popup__status strong {
+  display: block;
+  color: #142033;
+  font-size: 14px;
+}
+
+.jw-popup__status p {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.jw-popup__button {
+  width: 100%;
+  height: 42px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #ffb800, #ffcf32);
+  box-shadow: 0 12px 20px rgba(255, 184, 0, 0.22);
+  color: #142033;
+  cursor: pointer;
+  font-weight: 700;
+}
