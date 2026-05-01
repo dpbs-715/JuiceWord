@@ -37,7 +37,10 @@ export class FloatingView {
             <strong>JuiceWord</strong>
           </div>
           <div class="tools">
-            <button class="close" title="${escapeHtml(t.close)}" type="button">×</button>
+            <button class="close" title="${escapeHtml(t.close)}" type="button" aria-label="${escapeHtml(t.close)}">
+              <span></span>
+              <span></span>
+            </button>
           </div>
         </header>
         ${renderBody(state, locale)}
@@ -49,6 +52,7 @@ export class FloatingView {
     this.shadow.querySelector('.copy')?.addEventListener('click', () => {
       if (state.status === 'success') {
         actions.onCopy(state.result.translatedText);
+        this.showCopiedFeedback(t.copied);
       }
     });
     this.bindOutsideClose(actions.onClose);
@@ -92,6 +96,22 @@ export class FloatingView {
     };
 
     document.addEventListener('pointerdown', this.onOutsidePointerDown, true);
+  }
+
+  private showCopiedFeedback(label: string): void {
+    const copyButton = this.shadow?.querySelector<HTMLButtonElement>('.copy');
+
+    if (!copyButton) {
+      return;
+    }
+
+    copyButton.classList.add('copied');
+    copyButton.textContent = label;
+    copyButton.setAttribute('aria-live', 'polite');
+    window.setTimeout(() => {
+      copyButton.classList.remove('copied');
+      copyButton.textContent = '⧉';
+    }, 1200);
   }
 }
 
@@ -171,20 +191,6 @@ function getStyles(): string {
         box-shadow: 0 18px 46px rgba(255, 184, 0, 0.18), 0 10px 24px rgba(0, 0, 0, 0.08);
       }
 
-      .jw-card::after {
-        position: absolute;
-        left: 50%;
-        top: -10px;
-        width: 20px;
-        height: 20px;
-        border-top: 1px solid #ffe6a8;
-        border-left: 1px solid #ffe6a8;
-        background: #fffdf8;
-        content: "";
-        transform: translateX(-50%) rotate(45deg);
-        box-shadow: -6px -6px 14px rgba(255, 184, 0, 0.06);
-      }
-
       header {
         display: flex;
         align-items: center;
@@ -220,18 +226,47 @@ function getStyles(): string {
         gap: 6px;
       }
 
-      .tools button,
-      footer button {
+      .tools button {
+        position: relative;
         display: inline-grid;
-        min-width: 34px;
-        height: 30px;
+        width: 34px;
+        height: 34px;
         place-items: center;
         border: 0;
         border-radius: 8px;
         background: transparent;
         color: #142033;
         cursor: pointer;
-        font-size: 12px;
+      }
+
+      .tools button span {
+        position: absolute;
+        width: 16px;
+        height: 2px;
+        border-radius: 999px;
+        background: currentColor;
+      }
+
+      .tools button span:first-child {
+        transform: rotate(45deg);
+      }
+
+      .tools button span:last-child {
+        transform: rotate(-45deg);
+      }
+
+      footer button {
+        display: inline-grid;
+        min-width: 38px;
+        height: 32px;
+        place-items: center;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #142033;
+        cursor: pointer;
+        font-size: 13px;
+        transition: background 140ms ease, color 140ms ease, min-width 140ms ease;
       }
 
       .tools button:hover,
@@ -294,6 +329,13 @@ function getStyles(): string {
 
       footer button {
         background: #fff2c7;
+      }
+
+      footer button.copied {
+        min-width: 62px;
+        background: #ffb800;
+        color: #142033;
+        font-weight: 800;
       }
 
       .center-state {
