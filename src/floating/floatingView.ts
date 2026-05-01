@@ -1,33 +1,32 @@
+import type { AppLocale } from '../config/configTypes';
+import { getMessages } from '../shared/i18n';
 import { truncateText } from '../shared/text';
 import { getFloatingPosition } from './floatingPosition';
 import type { FloatingState, FloatingViewActions } from './floatingTypes';
 import { browser } from 'wxt/browser';
 
-const STYLE_ID = 'juiceword-floating-style';
 const ASSETS = {
   logo: browser.runtime.getURL('/assets/juiceword/logo-drop.svg'),
-  wave: browser.runtime.getURL('/assets/juiceword/liquid-wave.svg'),
 };
 
 export class FloatingView {
   private host: HTMLDivElement | null = null;
   private shadow: ShadowRoot | null = null;
-  private pinned = false;
+  private onOutsidePointerDown: ((event: PointerEvent) => void) | null = null;
 
-  render(state: FloatingState, actions: FloatingViewActions): void {
+  render(state: FloatingState, actions: FloatingViewActions, locale: AppLocale = 'en'): void {
     this.ensureMounted();
 
     if (!this.host || !this.shadow) {
       return;
     }
 
+    const t = getMessages(locale);
     const selection = 'selection' in state ? state.selection : undefined;
     const position = getFloatingPosition(selection);
 
-    if (!this.pinned) {
-      this.host.style.top = `${position.top}px`;
-      this.host.style.left = `${position.left}px`;
-    }
+    this.host.style.top = `${position.top}px`;
+    this.host.style.left = `${position.left}px`;
 
     this.shadow.innerHTML = `
       <style>${getStyles()}</style>
@@ -38,32 +37,32 @@ export class FloatingView {
             <strong>JuiceWord</strong>
           </div>
           <div class="tools">
-            <button class="pin" title="Pin" type="button">⌖</button>
-            <button class="close" title="Close" type="button">×</button>
+            <button class="close" title="${escapeHtml(t.close)}" type="button">×</button>
           </div>
         </header>
-        ${renderBody(state)}
+        ${renderBody(state, locale)}
       </article>
     `;
 
     this.shadow.querySelector('.close')?.addEventListener('click', actions.onClose);
-    this.shadow.querySelector('.pin')?.addEventListener('click', () => {
-      this.pinned = !this.pinned;
-      actions.onPin();
-    });
     this.shadow.querySelector('.retry')?.addEventListener('click', actions.onRetry);
     this.shadow.querySelector('.copy')?.addEventListener('click', () => {
       if (state.status === 'success') {
         actions.onCopy(state.result.translatedText);
       }
     });
+    this.bindOutsideClose(actions.onClose);
   }
 
   remove(): void {
+    if (this.onOutsidePointerDown) {
+      document.removeEventListener('pointerdown', this.onOutsidePointerDown, true);
+      this.onOutsidePointerDown = null;
+    }
+
     this.host?.remove();
     this.host = null;
     this.shadow = null;
-    this.pinned = false;
   }
 
   private ensureMounted(): void {
@@ -78,15 +77,33 @@ export class FloatingView {
     this.shadow = this.host.attachShadow({ mode: 'open' });
     document.documentElement.append(this.host);
   }
+
+  private bindOutsideClose(onClose: () => void): void {
+    if (this.onOutsidePointerDown || !this.host) {
+      return;
+    }
+
+    this.onOutsidePointerDown = (event) => {
+      if (this.host?.contains(event.target as Node)) {
+        return;
+      }
+
+      onClose();
+    };
+
+    document.addEventListener('pointerdown', this.onOutsidePointerDown, true);
+  }
 }
 
-function renderBody(state: FloatingState): string {
+function renderBody(state: FloatingState, locale: AppLocale): string {
+  const t = getMessages(locale);
+
   if (state.status === 'loading') {
     return `
       <section class="center-state">
         <div class="drops"><i></i><i></i><i></i></div>
-        <strong>正在翻译中...</strong>
-        <span>请稍候</span>
+        <strong>${escapeHtml(t.loadingTitle)}</strong>
+        <span>${escapeHtml(t.loadingDescription)}</span>
       </section>
     `;
   }
@@ -95,9 +112,9 @@ function renderBody(state: FloatingState): string {
     return `
       <section class="center-state">
         <div class="sad">!</div>
-        <strong>翻译失败</strong>
+        <strong>${escapeHtml(t.errorTitle)}</strong>
         <span>${escapeHtml(state.message)}</span>
-        <button class="retry action" type="button">重试</button>
+        <button class="retry action" type="button">${escapeHtml(t.retry)}</button>
       </section>
     `;
   }
@@ -106,39 +123,34 @@ function renderBody(state: FloatingState): string {
     return `
       <section class="center-state">
         <div class="sad calm">J</div>
-        <strong>文本过长</strong>
-        <span>当前文本字数过长，建议缩短后重试。</span>
+        <strong>${escapeHtml(t.textTooLongTitle)}</strong>
+        <span>${escapeHtml(t.textTooLongDescription)}</span>
       </section>
     `;
   }
 
   return `
-    <section class="text-block">
+    <section class="text-block source">
       <div class="label-row">
-        <span>原文（自动检测语言）</span>
+        <span>${escapeHtml(t.sourceLabel)}</span>
       </div>
       <p>${escapeHtml(truncateText(state.result.sourceText, 360))}</p>
     </section>
     <div class="juice-line"></div>
     <section class="text-block translated">
       <div class="label-row">
-        <span>译文（${escapeHtml(state.result.targetLanguage)}）</span>
+        <span>${escapeHtml(t.translationLabel)}</span>
       </div>
       <p>${escapeHtml(state.result.translatedText)}</p>
     </section>
     <footer>
-      <span class="language">◎ ${escapeHtml(state.result.targetLanguage)}⌄</span>
-      <div>
-        <button class="copy" title="Copy" type="button">⧉</button>
-        <button class="retry" title="Retry" type="button">↻</button>
-      </div>
+      <button class="copy" title="${escapeHtml(t.copy)}" type="button">⧉</button>
     </footer>
   `;
 }
 
 function getStyles(): string {
-  if (STYLE_ID) {
-    return `
+  return `
       :host {
         all: initial;
         color: #142033;
@@ -150,7 +162,7 @@ function getStyles(): string {
 
       .jw-card {
         position: relative;
-        width: 408px;
+        width: 360px;
         border: 1px solid #ffe6a8;
         border-radius: 16px;
         background:
@@ -162,15 +174,15 @@ function getStyles(): string {
       .jw-card::after {
         position: absolute;
         left: 50%;
-        bottom: -10px;
+        top: -10px;
         width: 20px;
         height: 20px;
-        border-right: 1px solid #ffe6a8;
-        border-bottom: 1px solid #ffe6a8;
+        border-top: 1px solid #ffe6a8;
+        border-left: 1px solid #ffe6a8;
         background: #fffdf8;
         content: "";
         transform: translateX(-50%) rotate(45deg);
-        box-shadow: 8px 8px 18px rgba(255, 184, 0, 0.08);
+        box-shadow: -6px -6px 14px rgba(255, 184, 0, 0.06);
       }
 
       header {
@@ -228,11 +240,16 @@ function getStyles(): string {
       }
 
       .text-block {
-        padding: 18px 24px 20px;
+        padding: 16px 22px 18px;
+      }
+
+      .text-block.source {
+        padding-bottom: 14px;
       }
 
       .text-block.translated {
-        background: linear-gradient(180deg, rgba(255, 248, 224, 0.7), rgba(255, 250, 236, 0.42));
+        padding-top: 18px;
+        background: linear-gradient(180deg, rgba(255, 248, 224, 0.72), rgba(255, 250, 236, 0.48));
       }
 
       .label-row {
@@ -245,33 +262,38 @@ function getStyles(): string {
       p {
         margin: 10px 0 0;
         color: #111827;
-        font-size: 18px;
+        font-size: 16px;
         line-height: 1.52;
       }
 
+      .translated p {
+        color: #142033;
+        font-size: 20px;
+        font-weight: 700;
+        line-height: 1.46;
+      }
+
       .juice-line {
-        height: 15px;
-        margin: -4px 0;
-        background: url("${ASSETS.wave}") center / 96% 38px no-repeat;
-        filter: drop-shadow(0 4px 7px rgba(255, 184, 0, 0.14));
+        height: 1px;
+        margin: 0 24px;
+        background: linear-gradient(90deg, transparent, #ffd36f, transparent);
       }
 
       footer {
-        display: flex;
+        display: grid;
         align-items: center;
-        justify-content: space-between;
+        justify-content: end;
         position: relative;
         z-index: 1;
-        height: 54px;
-        padding: 0 20px;
+        height: 46px;
+        padding: 0 18px;
         border-top: 1px solid #fff1c8;
         border-radius: 0 0 16px 16px;
         background: rgba(255, 253, 248, 0.88);
       }
 
-      .language {
-        color: #374151;
-        font-size: 13px;
+      footer button {
+        background: #fff2c7;
       }
 
       .center-state {
@@ -353,9 +375,6 @@ function getStyles(): string {
         to { transform: translateY(-10px); opacity: 1; }
       }
     `;
-  }
-
-  return '';
 }
 
 function escapeHtml(value: string): string {

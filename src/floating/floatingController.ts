@@ -54,7 +54,6 @@ export class FloatingController {
         void this.translate(this.currentSelection);
       }
     },
-    onPin: () => undefined,
   };
 
   private async refreshLocale(): Promise<void> {

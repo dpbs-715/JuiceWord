@@ -11,5 +11,4 @@ export interface FloatingViewActions {
   onClose(): void;
   onCopy(text: string): void;
   onRetry(): void;
-  onPin(): void;
 }
