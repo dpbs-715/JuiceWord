@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { configService } from '../../src/config/configService';
-import type { ExtensionConfig } from '../../src/config/configTypes';
+import type { AppLocale, ExtensionConfig } from '../../src/config/configTypes';
+import { APP_LOCALES, TARGET_LANGUAGES, getMessages } from '../../src/shared/i18n';
 
 type SaveState = 'idle' | 'saving' | 'saved';
 
@@ -9,10 +10,12 @@ export default function App() {
     baseUrl: '',
     apiKey: '',
     model: '',
-    targetLanguage: '简体中文',
+    targetLanguage: 'Simplified Chinese',
+    uiLanguage: 'en',
   });
   const [showApiKey, setShowApiKey] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
+  const t = getMessages(config.uiLanguage);
 
   useEffect(() => {
     void configService.getConfig().then(setConfig);
@@ -33,20 +36,19 @@ export default function App() {
         <div className="jw-liquid" />
         <nav aria-label="JuiceWord settings">
           <button className="active" type="button">
-            <span className="nav-icon">J</span>
-            模型配置
+            <img className="nav-logo" src="/assets/juiceword/logo-drop.svg" alt="" />
+            {t.navModelConfig}
           </button>
           <button type="button">
             <span className="nav-icon muted">G</span>
-            通用设置
+            {t.navGeneral}
           </button>
           <button type="button">
             <span className="nav-icon muted">i</span>
-            关于 JuiceWord
+            {t.navAbout}
           </button>
         </nav>
         <div className="jw-sidebar__footer">
-          <div className="glass">J</div>
           <strong>JuiceWord</strong>
           <span>v0.1.0</span>
         </div>
@@ -54,8 +56,8 @@ export default function App() {
 
       <section className="jw-panel" aria-labelledby="model-config-title">
         <header>
-          <h1 id="model-config-title">模型配置</h1>
-          <p>配置你的 AI 模型信息</p>
+          <h1 id="model-config-title">{t.modelConfigTitle}</h1>
+          <p>{t.modelConfigDescription}</p>
         </header>
 
         <form onSubmit={handleSubmit}>
@@ -68,7 +70,7 @@ export default function App() {
                 setConfig((current) => ({ ...current, baseUrl: event.target.value }))
               }
             />
-            <small>例：http://127.0.0.1:8317/v1</small>
+            <small>{t.baseUrlExample}</small>
           </label>
 
           <label>
@@ -86,7 +88,7 @@ export default function App() {
                 type="button"
                 onClick={() => setShowApiKey((value) => !value)}
               >
-                {showApiKey ? 'Hide' : 'Show'}
+                {showApiKey ? t.hide : t.show}
               </button>
             </div>
           </label>
@@ -100,11 +102,11 @@ export default function App() {
                 setConfig((current) => ({ ...current, model: event.target.value }))
               }
             />
-            <small>例：deepseek-chat, gpt-3.5-turbo, qwen-plus 等</small>
+            <small>{t.modelExample}</small>
           </label>
 
           <label>
-            <span>默认目标语言</span>
+            <span>{t.targetLanguage}</span>
             <select
               value={config.targetLanguage}
               onChange={(event) =>
@@ -114,20 +116,40 @@ export default function App() {
                 }))
               }
             >
-              <option>简体中文</option>
-              <option>English</option>
-              <option>日本語</option>
-              <option>한국어</option>
+              {TARGET_LANGUAGES.map((language) => (
+                <option key={language.value} value={language.value}>
+                  {language.label[config.uiLanguage]}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            <span>{t.uiLanguage}</span>
+            <select
+              value={config.uiLanguage}
+              onChange={(event) =>
+                setConfig((current) => ({
+                  ...current,
+                  uiLanguage: event.target.value as AppLocale,
+                }))
+              }
+            >
+              {APP_LOCALES.map((locale) => (
+                <option key={locale.value} value={locale.value}>
+                  {locale.label}
+                </option>
+              ))}
             </select>
           </label>
 
           <button className="save-button" type="submit" disabled={saveState === 'saving'}>
-            {saveState === 'saving' ? '保存中...' : '保存配置'}
+            {saveState === 'saving' ? t.saving : t.save}
           </button>
         </form>
 
         <div className={`saved-state ${saveState === 'saved' ? 'visible' : ''}`}>
-          配置已保存
+          {t.saved}
         </div>
       </section>
     </main>

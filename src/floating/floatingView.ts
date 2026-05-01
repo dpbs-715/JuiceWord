@@ -1,8 +1,13 @@
 import { truncateText } from '../shared/text';
 import { getFloatingPosition } from './floatingPosition';
 import type { FloatingState, FloatingViewActions } from './floatingTypes';
+import { browser } from 'wxt/browser';
 
 const STYLE_ID = 'juiceword-floating-style';
+const ASSETS = {
+  logo: browser.runtime.getURL('/assets/juiceword/logo-drop.svg'),
+  wave: browser.runtime.getURL('/assets/juiceword/liquid-wave.svg'),
+};
 
 export class FloatingView {
   private host: HTMLDivElement | null = null;
@@ -29,12 +34,12 @@ export class FloatingView {
       <article class="jw-card ${state.status}">
         <header>
           <div class="brand">
-            <span class="logo">J</span>
+            <img class="logo" src="${ASSETS.logo}" alt="" />
             <strong>JuiceWord</strong>
           </div>
           <div class="tools">
-            <button class="pin" title="Pin" type="button">Pin</button>
-            <button class="close" title="Close" type="button">Close</button>
+            <button class="pin" title="Pin" type="button">⌖</button>
+            <button class="close" title="Close" type="button">×</button>
           </div>
         </header>
         ${renderBody(state)}
@@ -122,10 +127,10 @@ function renderBody(state: FloatingState): string {
       <p>${escapeHtml(state.result.translatedText)}</p>
     </section>
     <footer>
-      <span>${escapeHtml(state.result.targetLanguage)}</span>
+      <span class="language">◎ ${escapeHtml(state.result.targetLanguage)}⌄</span>
       <div>
-        <button class="copy" type="button">Copy</button>
-        <button class="retry" type="button">Retry</button>
+        <button class="copy" title="Copy" type="button">⧉</button>
+        <button class="retry" title="Retry" type="button">↻</button>
       </div>
     </footer>
   `;
@@ -144,23 +149,39 @@ function getStyles(): string {
       button { font: inherit; }
 
       .jw-card {
-        width: 360px;
-        overflow: hidden;
+        position: relative;
+        width: 408px;
         border: 1px solid #ffe6a8;
         border-radius: 16px;
         background:
-          radial-gradient(circle at 24% 0%, rgba(255, 184, 0, 0.14), transparent 34%),
+          radial-gradient(circle at 16% 0%, rgba(255, 184, 0, 0.16), transparent 36%),
           #fffdf8;
         box-shadow: 0 18px 46px rgba(255, 184, 0, 0.18), 0 10px 24px rgba(0, 0, 0, 0.08);
+      }
+
+      .jw-card::after {
+        position: absolute;
+        left: 50%;
+        bottom: -10px;
+        width: 20px;
+        height: 20px;
+        border-right: 1px solid #ffe6a8;
+        border-bottom: 1px solid #ffe6a8;
+        background: #fffdf8;
+        content: "";
+        transform: translateX(-50%) rotate(45deg);
+        box-shadow: 8px 8px 18px rgba(255, 184, 0, 0.08);
       }
 
       header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        height: 56px;
-        padding: 0 18px;
+        height: 58px;
+        padding: 0 20px;
         border-bottom: 1px solid #fff1c8;
+        border-radius: 16px 16px 0 0;
+        background: rgba(255, 255, 255, 0.72);
       }
 
       .brand {
@@ -170,13 +191,15 @@ function getStyles(): string {
       }
 
       .logo {
-        display: grid;
-        width: 28px;
-        height: 28px;
-        place-items: center;
-        border-radius: 58% 42% 52% 48% / 64% 56% 44% 36%;
-        background: linear-gradient(145deg, #ffb800, #ffe477);
-        color: #fff;
+        width: 31px;
+        height: 31px;
+        object-fit: contain;
+        filter: drop-shadow(0 8px 10px rgba(255, 184, 0, 0.22));
+      }
+
+      .brand strong {
+        color: #142033;
+        font-size: 16px;
         font-weight: 800;
       }
 
@@ -187,8 +210,10 @@ function getStyles(): string {
 
       .tools button,
       footer button {
+        display: inline-grid;
         min-width: 34px;
         height: 30px;
+        place-items: center;
         border: 0;
         border-radius: 8px;
         background: transparent;
@@ -203,11 +228,11 @@ function getStyles(): string {
       }
 
       .text-block {
-        padding: 16px 20px 18px;
+        padding: 18px 24px 20px;
       }
 
       .text-block.translated {
-        background: rgba(255, 245, 207, 0.5);
+        background: linear-gradient(180deg, rgba(255, 248, 224, 0.7), rgba(255, 250, 236, 0.42));
       }
 
       .label-row {
@@ -220,38 +245,46 @@ function getStyles(): string {
       p {
         margin: 10px 0 0;
         color: #111827;
-        font-size: 17px;
+        font-size: 18px;
         line-height: 1.52;
       }
 
       .juice-line {
-        height: 7px;
-        background: linear-gradient(90deg, transparent, #ffcf32, transparent);
-        clip-path: polygon(0 35%, 13% 30%, 27% 62%, 42% 38%, 58% 58%, 73% 30%, 88% 54%, 100% 35%, 100% 100%, 0 100%);
+        height: 15px;
+        margin: -4px 0;
+        background: url("${ASSETS.wave}") center / 96% 38px no-repeat;
+        filter: drop-shadow(0 4px 7px rgba(255, 184, 0, 0.14));
       }
 
       footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        height: 52px;
-        padding: 0 18px;
+        position: relative;
+        z-index: 1;
+        height: 54px;
+        padding: 0 20px;
         border-top: 1px solid #fff1c8;
+        border-radius: 0 0 16px 16px;
+        background: rgba(255, 253, 248, 0.88);
       }
 
-      footer span {
+      .language {
         color: #374151;
         font-size: 13px;
       }
 
       .center-state {
+        position: relative;
         display: grid;
         min-height: 178px;
         place-items: center;
         padding: 24px;
         text-align: center;
+        overflow: hidden;
       }
 
+    
       .center-state strong {
         margin-top: 10px;
         font-size: 15px;
