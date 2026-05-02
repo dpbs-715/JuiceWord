@@ -48,11 +48,23 @@ export class FloatingView {
 
     this.shadow.querySelector('.close')?.addEventListener('click', actions.onClose);
     this.shadow.querySelector('.retry')?.addEventListener('click', actions.onRetry);
-    this.shadow.querySelector('.copy')?.addEventListener('click', () => {
+    this.shadow.querySelector('.copy-all')?.addEventListener('click', () => {
       if (state.status === 'success') {
         actions.onCopy(getCopyText(state.result));
-        this.showCopiedFeedback(t.copied);
+        this.showCopiedFeedback('.copy-all', t.copied, getFooterCopyLabel(state.result, t.copy, t.copyAll));
       }
+    });
+    this.shadow.querySelectorAll<HTMLButtonElement>('.copy-one').forEach((button) => {
+      button.addEventListener('click', () => {
+        const text = button.dataset.copyText;
+
+        if (!text) {
+          return;
+        }
+
+        actions.onCopy(text);
+        this.showCopiedFeedback(button, t.copied, t.copy);
+      });
     });
     this.bindOutsideClose(actions.onClose);
   }
@@ -97,8 +109,15 @@ export class FloatingView {
     document.addEventListener('pointerdown', this.onOutsidePointerDown, true);
   }
 
-  private showCopiedFeedback(label: string): void {
-    const copyButton = this.shadow?.querySelector<HTMLButtonElement>('.copy');
+  private showCopiedFeedback(
+    target: HTMLButtonElement | string,
+    label: string,
+    fallbackLabel: string,
+  ): void {
+    const copyButton =
+      typeof target === 'string'
+        ? this.shadow?.querySelector<HTMLButtonElement>(target)
+        : target;
 
     if (!copyButton) {
       return;
@@ -109,7 +128,7 @@ export class FloatingView {
     copyButton.setAttribute('aria-live', 'polite');
     window.setTimeout(() => {
       copyButton.classList.remove('copied');
-      copyButton.textContent = '⧉';
+      copyButton.textContent = fallbackLabel;
     }, 1200);
   }
 }
@@ -148,13 +167,22 @@ function renderBody(state: FloatingState, locale: AppLocale): string {
     `;
   }
 
+  const successfulCount = state.result.alternatives.filter((alternative) => !alternative.error).length;
+  const isMultiResult = successfulCount > 1;
+
   return `
     <section class="translation-list">
       ${state.result.alternatives.map((alternative) => `
         <article class="text-block translated ${alternative.error ? 'has-error' : ''}">
           <div class="label-row">
             <span>${escapeHtml(alternative.modelProfileName)}</span>
-            ${state.result.alternatives.length > 1 ? `<em>${escapeHtml(t.translationLabel)}</em>` : ''}
+            ${
+              alternative.error
+                ? `<em>${escapeHtml(t.translationLabel)}</em>`
+                : isMultiResult
+                  ? `<button class="copy-one" type="button" data-copy-text="${escapeHtml(alternative.translatedText)}">${escapeHtml(t.copy)}</button>`
+                  : ''
+            }
           </div>
           ${
             alternative.error
@@ -165,7 +193,7 @@ function renderBody(state: FloatingState, locale: AppLocale): string {
       `).join('')}
     </section>
     <footer>
-      <button class="copy" title="${escapeHtml(t.copy)}" type="button">⧉</button>
+      <button class="copy-all ${isMultiResult ? 'multi' : 'single'}" title="${escapeHtml(getFooterCopyLabel(state.result, t.copy, t.copyAll))}" type="button">${escapeHtml(getFooterCopyLabel(state.result, t.copy, t.copyAll))}</button>
     </footer>
   `;
 }
@@ -256,12 +284,13 @@ function getStyles(): string {
         transform: rotate(-45deg);
       }
 
+      .copy-one,
       footer button {
         display: inline-grid;
-        min-width: 38px;
+        min-width: 42px;
         height: 32px;
         place-items: center;
-        border: 0;
+        border: 1px solid transparent;
         border-radius: 8px;
         background: transparent;
         color: #142033;
@@ -271,6 +300,7 @@ function getStyles(): string {
       }
 
       .tools button:hover,
+      .copy-one:hover,
       footer button:hover {
         background: #fff0bd;
       }
@@ -298,6 +328,7 @@ function getStyles(): string {
 
       .label-row {
         display: flex;
+        align-items: center;
         justify-content: space-between;
         gap: 12px;
         color: #6b7280;
@@ -307,6 +338,22 @@ function getStyles(): string {
       .label-row em {
         color: #9a6500;
         font-style: normal;
+      }
+
+      .copy-one {
+        height: 28px;
+        border-color: #ffe6a8;
+        background: #fffdf8;
+        color: #9a6500;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 0 10px;
+      }
+
+      .copy-one.copied {
+        border-color: #ffb800;
+        background: #fff2c7;
+        color: #142033;
       }
 
       p {
@@ -332,23 +379,26 @@ function getStyles(): string {
       footer {
         display: grid;
         align-items: center;
-        justify-content: end;
+        justify-content: stretch;
         position: relative;
         z-index: 1;
-        height: 46px;
-        padding: 0 18px;
+        min-height: 52px;
+        padding: 8px 14px;
         border-top: 1px solid #fff1c8;
         border-radius: 0 0 16px 16px;
         background: rgba(255, 253, 248, 0.88);
       }
 
       footer button {
-        background: #fff2c7;
+        width: 100%;
+        background: linear-gradient(90deg, #ffb800, #ffcf32);
+        font-weight: 900;
+        box-shadow: 0 10px 20px rgba(255, 184, 0, 0.18);
       }
 
       footer button.copied {
         min-width: 62px;
-        background: #ffb800;
+        background: #10b981;
         color: #142033;
         font-weight: 800;
       }
@@ -453,4 +503,13 @@ function getCopyText(result: { alternatives: Array<{ modelProfileName: string; t
   return successfulResults
     .map((alternative) => `${alternative.modelProfileName}\n${alternative.translatedText}`)
     .join('\n\n');
+}
+
+function getFooterCopyLabel(
+  result: { alternatives: Array<{ error?: string }> },
+  copyLabel: string,
+  copyAllLabel: string,
+): string {
+  const successfulCount = result.alternatives.filter((alternative) => !alternative.error).length;
+  return successfulCount > 1 ? copyAllLabel : copyLabel;
 }

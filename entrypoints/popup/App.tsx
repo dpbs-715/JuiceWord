@@ -13,7 +13,6 @@ export default function App() {
 
   const t = getMessages(config?.uiLanguage ?? 'en');
   const activeProfile = config ? getActiveProfile(config) : null;
-  const isReady = Boolean(activeProfile?.baseUrl && activeProfile?.apiKey && activeProfile?.model);
 
   async function handleProfileChange(profileId: string) {
     const saved = await configService.setActiveModelProfile(profileId);
@@ -48,14 +47,6 @@ export default function App() {
         </div>
       </section>
 
-      <section className="jw-popup__status">
-        <span className={isReady ? 'ready' : 'pending'} />
-        <div>
-          <strong>{isReady ? t.ready : t.setupRequired}</strong>
-          <p>{isReady ? `${activeProfile?.name} · ${activeProfile?.model}` : t.addModelSettings}</p>
-        </div>
-      </section>
-
       {config ? (
         <section className="jw-popup__models" aria-label={t.modelProfiles}>
           <div className="jw-popup__section-title">
@@ -65,15 +56,16 @@ export default function App() {
           {config.modelProfiles.map((profile) => {
             const isActive = profile.id === activeProfile?.id;
             const isCompared = config.comparisonModelProfileIds.includes(profile.id);
+            const isConfigured = Boolean(profile.baseUrl && profile.apiKey && profile.model);
 
             return (
-              <article className={isActive ? 'active' : ''} key={profile.id}>
+              <article className={`${isActive ? 'active' : ''} ${isConfigured ? '' : 'incomplete'}`} key={profile.id}>
                 <button type="button" onClick={() => void handleProfileChange(profile.id)}>
                   <span>{profile.name.slice(0, 1).toUpperCase()}</span>
                   <strong>{profile.name}</strong>
-                  <small>{profile.model || t.setupRequired}</small>
+                  <small>{isConfigured ? profile.model : t.incompleteModelProfile}</small>
                 </button>
-                <label title={t.compareModels}>
+                <label title={t.compareToggle}>
                   <input
                     type="checkbox"
                     checked={isCompared}

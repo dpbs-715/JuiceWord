@@ -5,6 +5,7 @@ import type { AppLocale, ExtensionConfig, ModelProfile } from '../../src/config/
 import { APP_LOCALES, TARGET_LANGUAGES, getMessages } from '../../src/shared/i18n';
 
 type SaveState = 'idle' | 'saving' | 'saved';
+type OptionsPane = 'model' | 'general';
 
 interface BubbleConfig {
   left: string;
@@ -92,6 +93,7 @@ export default function App() {
   const [config, setConfig] = useState<ExtensionConfig>(DEFAULT_CONFIG);
   const [showApiKey, setShowApiKey] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [activePane, setActivePane] = useState<OptionsPane>('model');
   const t = getMessages(config.uiLanguage);
   const activeProfile = useMemo(() => getActiveProfile(config), [config]);
 
@@ -127,6 +129,7 @@ export default function App() {
   }
 
   function switchProfile(profileId: string) {
+    setActivePane('model');
     setConfig((current) => {
       const nextProfile =
         current.modelProfiles.find((profile) => profile.id === profileId) ?? getActiveProfile(current);
@@ -142,6 +145,7 @@ export default function App() {
   }
 
   function addProfile() {
+    setActivePane('model');
     setConfig((current) => {
       const nextIndex = current.modelProfiles.length + 1;
       const nextProfile: ModelProfile = {
@@ -165,6 +169,7 @@ export default function App() {
   }
 
   function removeActiveProfile() {
+    setActivePane('model');
     setConfig((current) => {
       if (current.modelProfiles.length <= 1) {
         return current;
@@ -205,14 +210,27 @@ export default function App() {
             </div>
           </header>
 
+          <button
+            className={`sidebar-nav-button general-entry ${activePane === 'general' ? 'active' : ''}`}
+            type="button"
+            aria-current={activePane === 'general' ? 'page' : undefined}
+            onClick={() => setActivePane('general')}
+          >
+            <span className="profile-initial">{t.generalInitial}</span>
+            <span className="profile-copy">
+              <strong>{t.preferencesSection}</strong>
+              <small>{t.preferencesSummary}</small>
+            </span>
+          </button>
+
           <nav className="profile-list" aria-label={t.modelProfiles}>
             {config.modelProfiles.map((profile) => {
-              const isActive = profile.id === activeProfile.id;
+              const isActive = activePane === 'model' && profile.id === activeProfile.id;
               const isCompared = config.comparisonModelProfileIds.includes(profile.id);
 
               return (
                 <button
-                  className={isActive ? 'active' : ''}
+                  className={`sidebar-nav-button ${isActive ? 'active' : ''}`}
                   key={profile.id}
                   type="button"
                   aria-current={isActive ? 'page' : undefined}
@@ -251,8 +269,14 @@ export default function App() {
         <section className="jw-panel" aria-labelledby="model-config-title">
           <header className="jw-panel__header">
             <div>
-              <h1 id="model-config-title">{t.modelConfigTitle}</h1>
-              <p>{activeProfile.name} · {activeProfile.model || t.modelConfigDescription}</p>
+              <h1 id="model-config-title">
+                {activePane === 'general' ? t.preferencesSection : t.modelConfigTitle}
+              </h1>
+              <p>
+                {activePane === 'general'
+                  ? t.preferencesSummary
+                  : `${activeProfile.name} · ${activeProfile.model || t.modelConfigDescription}`}
+              </p>
             </div>
             <div className={`saved-state ${saveState === 'saved' ? 'visible' : ''}`}>
               {t.saved}
@@ -260,101 +284,105 @@ export default function App() {
           </header>
 
           <form className="config-form" onSubmit={handleSubmit}>
-            <section className="form-section">
-              <label>
-                <span>{t.modelProfileName}</span>
-                <input
-                  value={activeProfile.name}
-                  placeholder="DeepSeek"
-                  onChange={(event) => updateActiveProfile({ name: event.target.value })}
-                />
-              </label>
-            </section>
+            {activePane === 'model' ? (
+              <>
+                <section className="form-section">
+                  <label>
+                    <span>{t.modelProfileName}</span>
+                    <input
+                      value={activeProfile.name}
+                      placeholder="DeepSeek"
+                      onChange={(event) => updateActiveProfile({ name: event.target.value })}
+                    />
+                  </label>
+                </section>
 
-            <section className="form-section">
-              <div className="field-grid">
-                <label>
-                  <span>Base URL</span>
-                  <input
-                    value={activeProfile.baseUrl}
-                    placeholder="http://127.0.0.1:8317/v1"
-                    onChange={(event) => updateActiveProfile({ baseUrl: event.target.value })}
-                  />
-                  <small>{t.baseUrlExample}</small>
-                </label>
+                <section className="form-section">
+                  <div className="field-grid">
+                    <label>
+                      <span>Base URL</span>
+                      <input
+                        value={activeProfile.baseUrl}
+                        placeholder="http://127.0.0.1:8317/v1"
+                        onChange={(event) => updateActiveProfile({ baseUrl: event.target.value })}
+                      />
+                      <small>{t.baseUrlExample}</small>
+                    </label>
 
-                <label>
-                  <span>Model</span>
-                  <input
-                    value={activeProfile.model}
-                    placeholder="deepseek-chat"
-                    onChange={(event) => updateActiveProfile({ model: event.target.value })}
-                  />
-                  <small>{t.modelExample}</small>
-                </label>
-              </div>
+                    <label>
+                      <span>Model</span>
+                      <input
+                        value={activeProfile.model}
+                        placeholder="deepseek-chat"
+                        onChange={(event) => updateActiveProfile({ model: event.target.value })}
+                      />
+                      <small>{t.modelExample}</small>
+                    </label>
+                  </div>
 
-              <label className="wide-field">
-                <span>API Key</span>
-                <div className="secret-field">
-                  <input
-                    value={activeProfile.apiKey}
-                    type={showApiKey ? 'text' : 'password'}
-                    onChange={(event) => updateActiveProfile({ apiKey: event.target.value })}
-                  />
-                  <button
-                    aria-label={showApiKey ? 'Hide API Key' : 'Show API Key'}
-                    aria-pressed={showApiKey}
-                    type="button"
-                    onClick={() => setShowApiKey((value) => !value)}
-                  >
-                    {showApiKey ? t.hide : t.show}
-                  </button>
+                  <label className="wide-field">
+                    <span>API Key</span>
+                    <div className="secret-field">
+                      <input
+                        value={activeProfile.apiKey}
+                        type={showApiKey ? 'text' : 'password'}
+                        onChange={(event) => updateActiveProfile({ apiKey: event.target.value })}
+                      />
+                      <button
+                        aria-label={showApiKey ? 'Hide API Key' : 'Show API Key'}
+                        aria-pressed={showApiKey}
+                        type="button"
+                        onClick={() => setShowApiKey((value) => !value)}
+                      >
+                        {showApiKey ? t.hide : t.show}
+                      </button>
+                    </div>
+                  </label>
+                </section>
+              </>
+            ) : (
+              <section className="global-settings full-page" aria-label={t.preferencesSection}>
+                <div className="field-grid">
+                  <label>
+                    <span>{t.targetLanguage}</span>
+                    <select
+                      value={config.targetLanguage}
+                      onChange={(event) =>
+                        setConfig((current) => ({
+                          ...current,
+                          targetLanguage: event.target.value,
+                        }))
+                      }
+                    >
+                      {TARGET_LANGUAGES.map((language) => (
+                        <option key={language.value} value={language.value}>
+                          {language.label[config.uiLanguage]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>{t.uiLanguage}</span>
+                    <select
+                      value={config.uiLanguage}
+                      onChange={(event) =>
+                        setConfig((current) => ({
+                          ...current,
+                          uiLanguage: event.target.value as AppLocale,
+                        }))
+                      }
+                    >
+                      {APP_LOCALES.map((locale) => (
+                        <option key={locale.value} value={locale.value}>
+                          {locale.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
-              </label>
-            </section>
-
-            <section className="global-settings" aria-label={t.preferencesSection}>
-              <div className="field-grid">
-                <label>
-                  <span>{t.targetLanguage}</span>
-                  <select
-                    value={config.targetLanguage}
-                    onChange={(event) =>
-                      setConfig((current) => ({
-                        ...current,
-                        targetLanguage: event.target.value,
-                      }))
-                    }
-                  >
-                    {TARGET_LANGUAGES.map((language) => (
-                      <option key={language.value} value={language.value}>
-                        {language.label[config.uiLanguage]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>{t.uiLanguage}</span>
-                  <select
-                    value={config.uiLanguage}
-                    onChange={(event) =>
-                      setConfig((current) => ({
-                        ...current,
-                        uiLanguage: event.target.value as AppLocale,
-                      }))
-                    }
-                  >
-                    {APP_LOCALES.map((locale) => (
-                      <option key={locale.value} value={locale.value}>
-                        {locale.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </section>
+              </section>
+            )}
 
             <footer className="form-actions">
               <button className="save-button" type="submit" disabled={saveState === 'saving'}>
