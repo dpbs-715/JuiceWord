@@ -1,6 +1,5 @@
 import type { AppLocale } from '../config/configTypes';
 import { getMessages } from '../shared/i18n';
-import { truncateText } from '../shared/text';
 import { getFloatingPosition } from './floatingPosition';
 import type { FloatingState, FloatingViewActions } from './floatingTypes';
 import { browser } from 'wxt/browser';
@@ -150,13 +149,6 @@ function renderBody(state: FloatingState, locale: AppLocale): string {
   }
 
   return `
-    <section class="text-block source">
-      <div class="label-row">
-        <span>${escapeHtml(t.sourceLabel)}</span>
-      </div>
-      <p>${escapeHtml(truncateText(state.result.sourceText, 360))}</p>
-    </section>
-    <div class="juice-line"></div>
     <section class="text-block translated">
       <div class="label-row">
         <span>${escapeHtml(t.translationLabel)}</span>
@@ -278,12 +270,7 @@ function getStyles(): string {
         padding: 16px 22px 18px;
       }
 
-      .text-block.source {
-        padding-bottom: 14px;
-      }
-
       .text-block.translated {
-        padding-top: 18px;
         background: linear-gradient(180deg, rgba(255, 248, 224, 0.72), rgba(255, 250, 236, 0.48));
       }
 
@@ -306,12 +293,6 @@ function getStyles(): string {
         font-size: 20px;
         font-weight: 700;
         line-height: 1.46;
-      }
-
-      .juice-line {
-        height: 1px;
-        margin: 0 24px;
-        background: linear-gradient(90deg, transparent, #ffd36f, transparent);
       }
 
       footer {
