@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { configService } from '../../src/config/configService';
-import type { ExtensionConfig } from '../../src/config/configTypes';
+import type { ExtensionConfig, ModelProfile } from '../../src/config/configTypes';
 import { getMessages } from '../../src/shared/i18n';
 
 export default function App() {
@@ -11,8 +11,32 @@ export default function App() {
     void configService.getConfig().then(setConfig);
   }, []);
 
-  const isReady = Boolean(config?.baseUrl && config?.apiKey && config?.model);
   const t = getMessages(config?.uiLanguage ?? 'en');
+  const activeProfile = config ? getActiveProfile(config) : null;
+  const isReady = Boolean(activeProfile?.baseUrl && activeProfile?.apiKey && activeProfile?.model);
+
+  async function handleProfileChange(profileId: string) {
+    const saved = await configService.setActiveModelProfile(profileId);
+    setConfig(saved);
+  }
+
+  async function handleCompareToggle(profileId: string) {
+    if (!config) {
+      return;
+    }
+
+    const currentIds = config.comparisonModelProfileIds;
+    const nextIds = currentIds.includes(profileId)
+      ? currentIds.filter((id) => id !== profileId)
+      : [...currentIds, profileId];
+
+    if (nextIds.length === 0) {
+      return;
+    }
+
+    const saved = await configService.setComparisonModelProfiles(nextIds);
+    setConfig(saved);
+  }
 
   return (
     <main className="jw-popup">
@@ -28,9 +52,39 @@ export default function App() {
         <span className={isReady ? 'ready' : 'pending'} />
         <div>
           <strong>{isReady ? t.ready : t.setupRequired}</strong>
-          <p>{isReady ? config?.model : t.addModelSettings}</p>
+          <p>{isReady ? `${activeProfile?.name} · ${activeProfile?.model}` : t.addModelSettings}</p>
         </div>
       </section>
+
+      {config ? (
+        <section className="jw-popup__models" aria-label={t.modelProfiles}>
+          <div className="jw-popup__section-title">
+            <strong>{t.activeModel}</strong>
+            <span>{t.compareModels}</span>
+          </div>
+          {config.modelProfiles.map((profile) => {
+            const isActive = profile.id === activeProfile?.id;
+            const isCompared = config.comparisonModelProfileIds.includes(profile.id);
+
+            return (
+              <article className={isActive ? 'active' : ''} key={profile.id}>
+                <button type="button" onClick={() => void handleProfileChange(profile.id)}>
+                  <span>{profile.name.slice(0, 1).toUpperCase()}</span>
+                  <strong>{profile.name}</strong>
+                  <small>{profile.model || t.setupRequired}</small>
+                </button>
+                <label title={t.compareModels}>
+                  <input
+                    type="checkbox"
+                    checked={isCompared}
+                    onChange={() => void handleCompareToggle(profile.id)}
+                  />
+                </label>
+              </article>
+            );
+          })}
+        </section>
+      ) : null}
 
       <button
         className="jw-popup__button"
@@ -40,5 +94,12 @@ export default function App() {
         {t.openOptions}
       </button>
     </main>
+  );
+}
+
+function getActiveProfile(config: ExtensionConfig): ModelProfile {
+  return (
+    config.modelProfiles.find((profile) => profile.id === config.activeModelProfileId) ??
+    config.modelProfiles[0]
   );
 }

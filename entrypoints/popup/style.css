@@ -5,7 +5,7 @@
 }
 
 body {
-  width: 320px;
+  width: 340px;
   margin: 0;
 }
 
@@ -23,6 +23,7 @@ button {
 
 .jw-popup__brand {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 12px;
 }
@@ -56,12 +57,127 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 22px 0;
+  margin: 22px 0 12px;
   padding: 14px;
   border: 1px solid #ffe5a3;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.78);
   box-shadow: 0 12px 30px rgba(255, 184, 0, 0.1);
+}
+
+.jw-popup__models {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid #ffe5a3;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.jw-popup__section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.jw-popup__section-title strong,
+.jw-popup__section-title span {
+  color: #142033;
+  font-size: 12px;
+}
+
+.jw-popup__section-title span {
+  color: #9a6500;
+  font-weight: 700;
+}
+
+.jw-popup__models article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #ffe8b8;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 5px;
+}
+
+.jw-popup__models article.active {
+  border-color: rgba(255, 184, 0, 0.5);
+  background: #fff2c7;
+  box-shadow: 0 10px 18px rgba(255, 184, 0, 0.12);
+}
+
+.jw-popup__models article > button {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-areas:
+    "icon name"
+    "icon model";
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+  min-height: 40px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #142033;
+  cursor: pointer;
+  padding: 4px 6px;
+  text-align: left;
+}
+
+.jw-popup__models article > button:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.jw-popup__models button span {
+  display: grid;
+  grid-area: icon;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #ffb800, #ffd13d);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.jw-popup__models button strong,
+.jw-popup__models button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jw-popup__models button strong {
+  grid-area: name;
+  font-size: 13px;
+}
+
+.jw-popup__models button small {
+  grid-area: model;
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.jw-popup__models label {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-left: 1px solid #fff1c8;
+  cursor: pointer;
+}
+
+.jw-popup__models input {
+  width: 15px;
+  height: 15px;
+  accent-color: #ffb800;
+  margin: 0;
 }
 
 .jw-popup__status span {

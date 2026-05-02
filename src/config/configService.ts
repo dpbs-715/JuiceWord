@@ -15,4 +15,27 @@ export const configService = {
     await extensionStorage.set(CONFIG_KEY, normalized);
     return normalized;
   },
+
+  async setActiveModelProfile(profileId: string): Promise<ExtensionConfig> {
+    const config = await this.getConfig();
+    const normalized = normalizeConfig({
+      ...config,
+      activeModelProfileId: profileId,
+      comparisonModelProfileIds: config.comparisonModelProfileIds.includes(profileId)
+        ? config.comparisonModelProfileIds
+        : [...config.comparisonModelProfileIds, profileId],
+    });
+    await extensionStorage.set(CONFIG_KEY, normalized);
+    return normalized;
+  },
+
+  async setComparisonModelProfiles(profileIds: string[]): Promise<ExtensionConfig> {
+    const config = await this.getConfig();
+    const normalized = normalizeConfig({
+      ...config,
+      comparisonModelProfileIds: profileIds,
+    });
+    await extensionStorage.set(CONFIG_KEY, normalized);
+    return normalized;
+  },
 };

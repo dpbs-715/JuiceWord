@@ -50,7 +50,7 @@ export class FloatingView {
     this.shadow.querySelector('.retry')?.addEventListener('click', actions.onRetry);
     this.shadow.querySelector('.copy')?.addEventListener('click', () => {
       if (state.status === 'success') {
-        actions.onCopy(state.result.translatedText);
+        actions.onCopy(getCopyText(state.result));
         this.showCopiedFeedback(t.copied);
       }
     });
@@ -149,11 +149,20 @@ function renderBody(state: FloatingState, locale: AppLocale): string {
   }
 
   return `
-    <section class="text-block translated">
-      <div class="label-row">
-        <span>${escapeHtml(t.translationLabel)}</span>
-      </div>
-      <p>${escapeHtml(state.result.translatedText)}</p>
+    <section class="translation-list">
+      ${state.result.alternatives.map((alternative) => `
+        <article class="text-block translated ${alternative.error ? 'has-error' : ''}">
+          <div class="label-row">
+            <span>${escapeHtml(alternative.modelProfileName)}</span>
+            ${state.result.alternatives.length > 1 ? `<em>${escapeHtml(t.translationLabel)}</em>` : ''}
+          </div>
+          ${
+            alternative.error
+              ? `<p class="model-error">${escapeHtml(alternative.error)}</p>`
+              : `<p>${escapeHtml(alternative.translatedText)}</p>`
+          }
+        </article>
+      `).join('')}
     </section>
     <footer>
       <button class="copy" title="${escapeHtml(t.copy)}" type="button">⧉</button>
@@ -266,19 +275,38 @@ function getStyles(): string {
         background: #fff0bd;
       }
 
+      .translation-list {
+        display: grid;
+        gap: 10px;
+        padding: 14px;
+      }
+
       .text-block {
         padding: 16px 22px 18px;
       }
 
       .text-block.translated {
+        border: 1px solid #fff1c8;
+        border-radius: 12px;
         background: linear-gradient(180deg, rgba(255, 248, 224, 0.72), rgba(255, 250, 236, 0.48));
+      }
+
+      .text-block.translated.has-error {
+        border-color: #fecdd3;
+        background: #fff1f2;
       }
 
       .label-row {
         display: flex;
         justify-content: space-between;
+        gap: 12px;
         color: #6b7280;
         font-size: 12px;
+      }
+
+      .label-row em {
+        color: #9a6500;
+        font-style: normal;
       }
 
       p {
@@ -293,6 +321,12 @@ function getStyles(): string {
         font-size: 20px;
         font-weight: 700;
         line-height: 1.46;
+      }
+
+      .translated .model-error {
+        color: #be123c;
+        font-size: 13px;
+        font-weight: 700;
       }
 
       footer {
@@ -407,4 +441,16 @@ function escapeHtml(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function getCopyText(result: { alternatives: Array<{ modelProfileName: string; translatedText: string; error?: string }> }): string {
+  const successfulResults = result.alternatives.filter((alternative) => !alternative.error);
+
+  if (successfulResults.length <= 1) {
+    return successfulResults[0]?.translatedText ?? '';
+  }
+
+  return successfulResults
+    .map((alternative) => `${alternative.modelProfileName}\n${alternative.translatedText}`)
+    .join('\n\n');
 }

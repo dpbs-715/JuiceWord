@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { configService } from '../../src/config/configService';
 import { DEFAULT_CONFIG } from '../../src/config/configSchema';
-import type { AppLocale, ExtensionConfig } from '../../src/config/configTypes';
+import type { AppLocale, ExtensionConfig, ModelProfile } from '../../src/config/configTypes';
 import { APP_LOCALES, TARGET_LANGUAGES, getMessages } from '../../src/shared/i18n';
 
 type SaveState = 'idle' | 'saving' | 'saved';
@@ -93,6 +93,7 @@ export default function App() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const t = getMessages(config.uiLanguage);
+  const activeProfile = useMemo(() => getActiveProfile(config), [config]);
 
   useEffect(() => {
     void configService.getConfig().then(setConfig);
@@ -107,25 +108,140 @@ export default function App() {
     window.setTimeout(() => setSaveState('idle'), 1800);
   }
 
+  function updateActiveProfile(updates: Partial<ModelProfile>) {
+    setConfig((current) => {
+      const profile = getActiveProfile(current);
+      const nextProfile = { ...profile, ...updates };
+      const nextProfiles = current.modelProfiles.map((item) =>
+        item.id === profile.id ? nextProfile : item,
+      );
+
+      return {
+        ...current,
+        baseUrl: nextProfile.baseUrl,
+        apiKey: nextProfile.apiKey,
+        model: nextProfile.model,
+        modelProfiles: nextProfiles,
+      };
+    });
+  }
+
+  function switchProfile(profileId: string) {
+    setConfig((current) => {
+      const nextProfile =
+        current.modelProfiles.find((profile) => profile.id === profileId) ?? getActiveProfile(current);
+
+      return {
+        ...current,
+        activeModelProfileId: nextProfile.id,
+        baseUrl: nextProfile.baseUrl,
+        apiKey: nextProfile.apiKey,
+        model: nextProfile.model,
+      };
+    });
+  }
+
+  function addProfile() {
+    setConfig((current) => {
+      const nextIndex = current.modelProfiles.length + 1;
+      const nextProfile: ModelProfile = {
+        id: `profile-${Date.now()}`,
+        name: `${t.modelProfile} ${nextIndex}`,
+        baseUrl: current.baseUrl,
+        apiKey: current.apiKey,
+        model: current.model,
+      };
+
+      return {
+        ...current,
+        activeModelProfileId: nextProfile.id,
+        baseUrl: nextProfile.baseUrl,
+        apiKey: nextProfile.apiKey,
+        model: nextProfile.model,
+        comparisonModelProfileIds: [...current.comparisonModelProfileIds, nextProfile.id],
+        modelProfiles: [...current.modelProfiles, nextProfile],
+      };
+    });
+  }
+
+  function removeActiveProfile() {
+    setConfig((current) => {
+      if (current.modelProfiles.length <= 1) {
+        return current;
+      }
+
+      const nextProfiles = current.modelProfiles.filter(
+        (profile) => profile.id !== current.activeModelProfileId,
+      );
+      const nextProfile = nextProfiles[0];
+
+      const nextComparisonIds = current.comparisonModelProfileIds.filter(
+        (id) => id !== current.activeModelProfileId,
+      );
+
+      return {
+        ...current,
+        activeModelProfileId: nextProfile.id,
+        baseUrl: nextProfile.baseUrl,
+        apiKey: nextProfile.apiKey,
+        model: nextProfile.model,
+        comparisonModelProfileIds:
+          nextComparisonIds.length > 0 ? nextComparisonIds : [nextProfile.id],
+        modelProfiles: nextProfiles,
+      };
+    });
+  }
+
   return (
     <>
       <BubbleField />
       <main className="jw-options-shell">
         <aside className="jw-sidebar">
-          <nav aria-label="JuiceWord settings">
-            <button className="active" type="button" aria-current="page">
-              <img className="nav-logo" src="/assets/juiceword/logo-drop.svg" alt="" />
-              {t.navModelConfig}
-            </button>
-            {/*<button type="button">*/}
-            {/*  <span className="nav-icon muted">G</span>*/}
-            {/*  {t.navGeneral}*/}
-            {/*</button>*/}
-            {/*<button type="button">*/}
-            {/*  <span className="nav-icon muted">i</span>*/}
-            {/*  {t.navAbout}*/}
-            {/*</button>*/}
+          <header className="jw-sidebar__brand">
+            <img className="nav-logo" src="/assets/juiceword/logo-drop.svg" alt="" />
+            <div>
+              <strong>JuiceWord</strong>
+              <span>{t.modelProfiles}</span>
+            </div>
+          </header>
+
+          <nav className="profile-list" aria-label={t.modelProfiles}>
+            {config.modelProfiles.map((profile) => {
+              const isActive = profile.id === activeProfile.id;
+              const isCompared = config.comparisonModelProfileIds.includes(profile.id);
+
+              return (
+                <button
+                  className={isActive ? 'active' : ''}
+                  key={profile.id}
+                  type="button"
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => switchProfile(profile.id)}
+                >
+                  <span className="profile-initial">{profile.name.slice(0, 1).toUpperCase()}</span>
+                  <span className="profile-copy">
+                    <strong>{profile.name}</strong>
+                    <small>{profile.model || t.setupRequired}</small>
+                  </span>
+                  {isCompared ? <span className="profile-badge">{t.compareBadge}</span> : null}
+                </button>
+              );
+            })}
           </nav>
+
+          <div className="profile-actions">
+            <button type="button" onClick={addProfile}>
+              {t.addModelProfile}
+            </button>
+            <button
+              type="button"
+              onClick={removeActiveProfile}
+              disabled={config.modelProfiles.length <= 1}
+            >
+              {t.removeModelProfile}
+            </button>
+          </div>
+
           <div className="jw-sidebar__footer">
             <strong>JuiceWord</strong>
             <span>v0.1.0</span>
@@ -133,105 +249,129 @@ export default function App() {
         </aside>
 
         <section className="jw-panel" aria-labelledby="model-config-title">
-          <header>
-            <h1 id="model-config-title">{t.modelConfigTitle}</h1>
-            <p>{t.modelConfigDescription}</p>
+          <header className="jw-panel__header">
+            <div>
+              <h1 id="model-config-title">{t.modelConfigTitle}</h1>
+              <p>{activeProfile.name} · {activeProfile.model || t.modelConfigDescription}</p>
+            </div>
+            <div className={`saved-state ${saveState === 'saved' ? 'visible' : ''}`}>
+              {t.saved}
+            </div>
           </header>
 
-          <form onSubmit={handleSubmit}>
-            <label>
-              <span>Base URL</span>
-              <input
-                value={config.baseUrl}
-                placeholder="http://127.0.0.1:8317/v1"
-                onChange={(event) =>
-                  setConfig((current) => ({ ...current, baseUrl: event.target.value }))
-                }
-              />
-              <small>{t.baseUrlExample}</small>
-            </label>
-
-            <label>
-              <span>API Key</span>
-              <div className="secret-field">
+          <form className="config-form" onSubmit={handleSubmit}>
+            <section className="form-section">
+              <label>
+                <span>{t.modelProfileName}</span>
                 <input
-                  value={config.apiKey}
-                  type={showApiKey ? 'text' : 'password'}
-                  onChange={(event) =>
-                    setConfig((current) => ({ ...current, apiKey: event.target.value }))
-                  }
+                  value={activeProfile.name}
+                  placeholder="DeepSeek"
+                  onChange={(event) => updateActiveProfile({ name: event.target.value })}
                 />
-                <button
-                  aria-label={showApiKey ? 'Hide API Key' : 'Show API Key'}
-                  aria-pressed={showApiKey}
-                  type="button"
-                  onClick={() => setShowApiKey((value) => !value)}
-                >
-                  {showApiKey ? t.hide : t.show}
-                </button>
+              </label>
+            </section>
+
+            <section className="form-section">
+              <div className="field-grid">
+                <label>
+                  <span>Base URL</span>
+                  <input
+                    value={activeProfile.baseUrl}
+                    placeholder="http://127.0.0.1:8317/v1"
+                    onChange={(event) => updateActiveProfile({ baseUrl: event.target.value })}
+                  />
+                  <small>{t.baseUrlExample}</small>
+                </label>
+
+                <label>
+                  <span>Model</span>
+                  <input
+                    value={activeProfile.model}
+                    placeholder="deepseek-chat"
+                    onChange={(event) => updateActiveProfile({ model: event.target.value })}
+                  />
+                  <small>{t.modelExample}</small>
+                </label>
               </div>
-            </label>
 
-            <label>
-              <span>Model</span>
-              <input
-                value={config.model}
-                placeholder="deepseek-chat"
-                onChange={(event) =>
-                  setConfig((current) => ({ ...current, model: event.target.value }))
-                }
-              />
-              <small>{t.modelExample}</small>
-            </label>
+              <label className="wide-field">
+                <span>API Key</span>
+                <div className="secret-field">
+                  <input
+                    value={activeProfile.apiKey}
+                    type={showApiKey ? 'text' : 'password'}
+                    onChange={(event) => updateActiveProfile({ apiKey: event.target.value })}
+                  />
+                  <button
+                    aria-label={showApiKey ? 'Hide API Key' : 'Show API Key'}
+                    aria-pressed={showApiKey}
+                    type="button"
+                    onClick={() => setShowApiKey((value) => !value)}
+                  >
+                    {showApiKey ? t.hide : t.show}
+                  </button>
+                </div>
+              </label>
+            </section>
 
-            <label>
-              <span>{t.targetLanguage}</span>
-              <select
-                value={config.targetLanguage}
-                onChange={(event) =>
-                  setConfig((current) => ({
-                    ...current,
-                    targetLanguage: event.target.value,
-                  }))
-                }
-              >
-                {TARGET_LANGUAGES.map((language) => (
-                  <option key={language.value} value={language.value}>
-                    {language.label[config.uiLanguage]}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <section className="global-settings" aria-label={t.preferencesSection}>
+              <div className="field-grid">
+                <label>
+                  <span>{t.targetLanguage}</span>
+                  <select
+                    value={config.targetLanguage}
+                    onChange={(event) =>
+                      setConfig((current) => ({
+                        ...current,
+                        targetLanguage: event.target.value,
+                      }))
+                    }
+                  >
+                    {TARGET_LANGUAGES.map((language) => (
+                      <option key={language.value} value={language.value}>
+                        {language.label[config.uiLanguage]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-            <label>
-              <span>{t.uiLanguage}</span>
-              <select
-                value={config.uiLanguage}
-                onChange={(event) =>
-                  setConfig((current) => ({
-                    ...current,
-                    uiLanguage: event.target.value as AppLocale,
-                  }))
-                }
-              >
-                {APP_LOCALES.map((locale) => (
-                  <option key={locale.value} value={locale.value}>
-                    {locale.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <label>
+                  <span>{t.uiLanguage}</span>
+                  <select
+                    value={config.uiLanguage}
+                    onChange={(event) =>
+                      setConfig((current) => ({
+                        ...current,
+                        uiLanguage: event.target.value as AppLocale,
+                      }))
+                    }
+                  >
+                    {APP_LOCALES.map((locale) => (
+                      <option key={locale.value} value={locale.value}>
+                        {locale.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
 
-            <button className="save-button" type="submit" disabled={saveState === 'saving'}>
-              {saveState === 'saving' ? t.saving : t.save}
-            </button>
+            <footer className="form-actions">
+              <button className="save-button" type="submit" disabled={saveState === 'saving'}>
+                {saveState === 'saving' ? t.saving : t.save}
+              </button>
+            </footer>
           </form>
-
-          <div className={`saved-state ${saveState === 'saved' ? 'visible' : ''}`}>
-            {t.saved}
-          </div>
         </section>
       </main>
     </>
+  );
+}
+
+function getActiveProfile(config: ExtensionConfig): ModelProfile {
+  return (
+    config.modelProfiles.find((profile) => profile.id === config.activeModelProfileId) ??
+    config.modelProfiles[0] ??
+    DEFAULT_CONFIG.modelProfiles[0]
   );
 }
