@@ -117,14 +117,14 @@ export default function App() {
               <img className="nav-logo" src="/assets/juiceword/logo-drop.svg" alt="" />
               {t.navModelConfig}
             </button>
-            <button type="button">
-              <span className="nav-icon muted">G</span>
-              {t.navGeneral}
-            </button>
-            <button type="button">
-              <span className="nav-icon muted">i</span>
-              {t.navAbout}
-            </button>
+            {/*<button type="button">*/}
+            {/*  <span className="nav-icon muted">G</span>*/}
+            {/*  {t.navGeneral}*/}
+            {/*</button>*/}
+            {/*<button type="button">*/}
+            {/*  <span className="nav-icon muted">i</span>*/}
+            {/*  {t.navAbout}*/}
+            {/*</button>*/}
           </nav>
           <div className="jw-sidebar__footer">
             <strong>JuiceWord</strong>
