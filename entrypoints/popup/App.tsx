@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { configService } from '../../src/config/configService';
 import type { ExtensionConfig, ModelProfile } from '../../src/config/configTypes';
-import { getMessages } from '../../src/shared/i18n';
+import { TARGET_LANGUAGES, getMessages } from '../../src/shared/i18n';
 
 export default function App() {
   const [config, setConfig] = useState<ExtensionConfig | null>(null);
@@ -37,14 +37,45 @@ export default function App() {
     setConfig(saved);
   }
 
+  async function handleTargetLanguageChange(targetLanguage: string) {
+    if (!config) {
+      return;
+    }
+
+    const saved = await configService.saveConfig({
+      ...config,
+      targetLanguage,
+    });
+    setConfig(saved);
+  }
+
   return (
     <main className="jw-popup">
-      <section className="jw-popup__brand">
-        <img className="jw-logo" src="/assets/juiceword/logo-drop.svg" alt="" />
-        <div>
-          <h1>JuiceWord</h1>
-          <p>{t.popupTagline}</p>
+      <section className="jw-popup__top">
+        <div className="jw-popup__brand">
+          <img className="jw-logo" src="/assets/juiceword/logo-drop.svg" alt="" />
+          <div>
+            <h1>JuiceWord</h1>
+            <p>{t.popupTagline}</p>
+          </div>
         </div>
+      </section>
+      <section className="jw-popup__quickbar">
+        {config ? (
+          <label className="jw-popup__language">
+            <span>{t.quickTargetLanguage}</span>
+            <select
+              value={config.targetLanguage}
+              onChange={(event) => void handleTargetLanguageChange(event.target.value)}
+            >
+              {TARGET_LANGUAGES.map((language) => (
+                <option key={language.value} value={language.value}>
+                  {language.label[config.uiLanguage]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
       </section>
 
       {config ? (

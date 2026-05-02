@@ -169,6 +169,10 @@ export default function App() {
   }
 
   function removeActiveProfile() {
+    if (!window.confirm(t.confirmRemoveModelProfile)) {
+      return;
+    }
+
     setActivePane('model');
     setConfig((current) => {
       if (current.modelProfiles.length <= 1) {
@@ -262,7 +266,7 @@ export default function App() {
 
           <div className="jw-sidebar__footer">
             <strong>JuiceWord</strong>
-            <span>v0.1.0</span>
+            <span>v1.1.0</span>
           </div>
         </aside>
 

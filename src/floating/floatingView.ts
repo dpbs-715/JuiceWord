@@ -211,7 +211,9 @@ function getStyles(): string {
 
       .jw-card {
         position: relative;
-        width: 360px;
+        width: min(360px, calc(100vw - 28px));
+        max-height: min(720px, calc(100vh - 48px));
+        overflow: hidden;
         border: 1px solid #ffe6a8;
         border-radius: 16px;
         background:
@@ -308,11 +310,24 @@ function getStyles(): string {
       .translation-list {
         display: grid;
         gap: 10px;
+        max-height: min(520px, calc(100vh - 166px));
+        overflow: auto;
         padding: 14px;
+        scrollbar-color: rgba(255, 184, 0, 0.48) transparent;
+        scrollbar-width: thin;
+      }
+
+      .translation-list::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .translation-list::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: rgba(255, 184, 0, 0.5);
       }
 
       .text-block {
-        padding: 16px 22px 18px;
+        padding: 15px 18px 17px;
       }
 
       .text-block.translated {
@@ -359,15 +374,16 @@ function getStyles(): string {
       p {
         margin: 10px 0 0;
         color: #111827;
-        font-size: 16px;
-        line-height: 1.52;
+        font-size: 15px;
+        line-height: 1.58;
       }
 
       .translated p {
         color: #142033;
-        font-size: 20px;
-        font-weight: 700;
-        line-height: 1.46;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.62;
+        letter-spacing: 0;
       }
 
       .translated .model-error {
