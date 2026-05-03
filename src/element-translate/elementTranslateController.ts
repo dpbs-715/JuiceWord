@@ -10,6 +10,7 @@ const RESULT_CLASS = 'juiceword-element-translate-result';
 const RESULT_PENDING_CLASS = 'juiceword-element-translate-result-pending';
 const RESULT_ERROR_CLASS = 'juiceword-element-translate-result-error';
 const STATUS_CLASS = 'juiceword-element-translate-status';
+const MODE_CURSOR = `url("data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='shadow' x='-40%25' y='-40%25' width='180%25' height='180%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='1.6' flood-color='%23000000' flood-opacity='.28'/%3E%3C/filter%3E%3Cpath d='M14 2.8C10.1 7.7 7 11.4 7 15.7 7 20.2 10 23.4 14 23.4S21 20.2 21 15.7C21 11.4 17.9 7.7 14 2.8Z' fill='%23ffb800' filter='url(%23shadow)'/%3E%3Cpath d='M14 4.8C10.9 8.9 8.8 11.9 8.8 15.5 8.8 19 11 21.6 14 21.6S19.2 19 19.2 15.5C19.2 11.9 17.1 8.9 14 4.8Z' fill='%23ffcf32'/%3E%3Cpath d='M11.2 12.8C11.7 10.9 13 8.9 14 7.5' fill='none' stroke='%23fff8dc' stroke-width='1.7' stroke-linecap='round'/%3E%3Ccircle cx='17' cy='9.4' r='1.35' fill='%23fff8dc'/%3E%3C/svg%3E") 14 22, pointer`;
 
 const BLOCKED_TAGS = new Set([
   'AUDIO',
@@ -308,7 +309,7 @@ function injectStyles(): void {
   style.id = STYLE_ID;
   style.textContent = `
     html.${MODE_CLASS}, html.${MODE_CLASS} * {
-      cursor: crosshair !important;
+      cursor: ${MODE_CURSOR} !important;
     }
 
     .${OVERLAY_CLASS} {
