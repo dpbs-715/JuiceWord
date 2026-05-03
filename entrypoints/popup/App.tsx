@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { configService } from '../../src/config/configService';
 import type { ExtensionConfig, ModelProfile } from '../../src/config/configTypes';
+import { setElementTranslateModeForActiveTab } from '../../src/messaging/messageClient';
 import { TARGET_LANGUAGES, getMessages } from '../../src/shared/i18n';
 
 export default function App() {
   const [config, setConfig] = useState<ExtensionConfig | null>(null);
+  const [elementModeError, setElementModeError] = useState('');
 
   useEffect(() => {
     void configService.getConfig().then(setConfig);
@@ -48,6 +50,30 @@ export default function App() {
       targetLanguage,
     });
     setConfig(saved);
+  }
+
+  async function handleElementTranslateModelChange(elementTranslateModelProfileId: string) {
+    if (!config) {
+      return;
+    }
+
+    const saved = await configService.saveConfig({
+      ...config,
+      elementTranslateModelProfileId,
+    });
+    setConfig(saved);
+  }
+
+  async function handleEnableElementTranslateMode() {
+    setElementModeError('');
+    const response = await setElementTranslateModeForActiveTab(true);
+
+    if (!response?.ok) {
+      setElementModeError(t.elementTranslateUnavailable);
+      return;
+    }
+
+    window.close();
   }
 
   return (
@@ -109,6 +135,25 @@ export default function App() {
               </article>
             );
           })}
+          <div className="jw-popup__element-translate">
+            <label>
+              <span>{t.elementTranslateModel}</span>
+              <select
+                value={config.elementTranslateModelProfileId}
+                onChange={(event) => void handleElementTranslateModelChange(event.target.value)}
+              >
+                {config.modelProfiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="button" onClick={() => void handleEnableElementTranslateMode()}>
+              {t.elementTranslateMode}
+            </button>
+            {elementModeError ? <p>{elementModeError}</p> : null}
+          </div>
         </section>
       ) : null}
 

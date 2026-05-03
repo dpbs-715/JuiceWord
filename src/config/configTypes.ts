@@ -15,6 +15,7 @@ export interface ExtensionConfig {
   targetLanguage: string;
   uiLanguage: AppLocale;
   activeModelProfileId: string;
+  elementTranslateModelProfileId: string;
   comparisonModelProfileIds: string[];
   modelProfiles: ModelProfile[];
 }

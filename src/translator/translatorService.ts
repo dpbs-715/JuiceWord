@@ -33,6 +33,27 @@ export const translatorService = {
       alternatives,
     };
   },
+
+  async translateElementText(text: string, targetLanguage?: string): Promise<TranslationResult> {
+    const config = await configService.getConfig();
+    const language = targetLanguage || config.targetLanguage;
+    const prompt = buildTranslationPrompt(text, language);
+    const profile = getElementTranslateProfile(config);
+    const result = await translateWithProfile(config, profile, prompt);
+
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    return {
+      sourceText: text,
+      translatedText: result.translatedText,
+      targetLanguage: language,
+      modelProfileId: result.modelProfileId,
+      modelProfileName: result.modelProfileName,
+      alternatives: [result],
+    };
+  },
 };
 
 function getComparisonProfiles(config: ExtensionConfig): ModelProfile[] {
@@ -44,6 +65,14 @@ function getComparisonProfiles(config: ExtensionConfig): ModelProfile[] {
   }
 
   return config.modelProfiles.filter((profile) => profile.id === config.activeModelProfileId);
+}
+
+function getElementTranslateProfile(config: ExtensionConfig): ModelProfile {
+  return (
+    config.modelProfiles.find((profile) => profile.id === config.elementTranslateModelProfileId) ??
+    config.modelProfiles.find((profile) => profile.id === config.comparisonModelProfileIds[0]) ??
+    config.modelProfiles[0]
+  );
 }
 
 async function translateWithProfile(

@@ -5,7 +5,7 @@ export default defineConfig({
     name: 'JuiceWord',
     description: 'Selection-based translation powered by OpenAI-compatible APIs.',
     version: '1.1.0',
-    permissions: ['contextMenus', 'storage', 'activeTab'],
+    permissions: ['contextMenus', 'storage', 'activeTab', 'scripting'],
     host_permissions: ['<all_urls>'],
     icons: {
       16: 'assets/juiceword/icons/icon-16.png',

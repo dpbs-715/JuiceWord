@@ -10,6 +10,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   targetLanguage: DEFAULT_TARGET_LANGUAGE,
   uiLanguage: DEFAULT_UI_LANGUAGE,
   activeModelProfileId: DEFAULT_MODEL_PROFILE_ID,
+  elementTranslateModelProfileId: DEFAULT_MODEL_PROFILE_ID,
   comparisonModelProfileIds: [DEFAULT_MODEL_PROFILE_ID],
   modelProfiles: [
     {
@@ -31,6 +32,11 @@ export function normalizeConfig(config?: Partial<ExtensionConfig>): ExtensionCon
     activeModelProfileId,
     modelProfiles,
   );
+  const elementTranslateModelProfileId = getElementTranslateModelProfileId(
+    config?.elementTranslateModelProfileId,
+    comparisonModelProfileIds,
+    modelProfiles,
+  );
 
   return {
     baseUrl: activeModelProfile.baseUrl,
@@ -39,6 +45,7 @@ export function normalizeConfig(config?: Partial<ExtensionConfig>): ExtensionCon
     targetLanguage: normalizeTargetLanguage(config?.targetLanguage),
     uiLanguage: config?.uiLanguage === 'zh-CN' ? 'zh-CN' : DEFAULT_CONFIG.uiLanguage,
     activeModelProfileId,
+    elementTranslateModelProfileId,
     comparisonModelProfileIds,
     modelProfiles,
   };
@@ -97,6 +104,23 @@ function normalizeComparisonProfileIds(
   }
 
   return [activeModelProfileId];
+}
+
+function getElementTranslateModelProfileId(
+  value: string | undefined,
+  comparisonModelProfileIds: string[],
+  profiles: ModelProfile[],
+): string {
+  const profileIds = new Set(profiles.map((profile) => profile.id));
+  const configuredId = value?.trim();
+
+  if (configuredId && profileIds.has(configuredId)) {
+    return configuredId;
+  }
+
+  const firstComparedId = comparisonModelProfileIds.find((id) => profileIds.has(id));
+
+  return firstComparedId ?? profiles[0]?.id ?? DEFAULT_MODEL_PROFILE_ID;
 }
 
 function createProfileId(index: number): string {
