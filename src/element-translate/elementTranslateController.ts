@@ -36,7 +36,7 @@ export class ElementTranslateController {
   private status: HTMLDivElement | null = null;
   private translatingElements = new WeakSet<HTMLElement>();
   private highlightedElement: HTMLElement | null = null;
-  private highlightedInlineStyle: string | null = null;
+  private highlightedStyles: Partial<Record<string, string>> = {};
 
   setEnabled(enabled: boolean): boolean {
     if (enabled === this.enabled) {
@@ -173,7 +173,14 @@ export class ElementTranslateController {
 
     this.clearTargetHighlight();
     this.highlightedElement = element;
-    this.highlightedInlineStyle = element.getAttribute('style');
+    this.highlightedStyles = {
+      backgroundColor: element.style.backgroundColor,
+      backgroundImage: element.style.backgroundImage,
+      boxShadow: element.style.boxShadow,
+      outline: element.style.outline,
+      outlineOffset: element.style.outlineOffset,
+      borderRadius: element.style.borderRadius,
+    };
     element.classList.add(TARGET_CLASS);
     element.style.setProperty('background-color', 'rgba(255, 184, 0, 0.18)', 'important');
     element.style.setProperty(
@@ -193,15 +200,15 @@ export class ElementTranslateController {
     }
 
     this.highlightedElement.classList.remove(TARGET_CLASS);
-
-    if (this.highlightedInlineStyle === null) {
-      this.highlightedElement.removeAttribute('style');
-    } else {
-      this.highlightedElement.setAttribute('style', this.highlightedInlineStyle);
-    }
+    this.highlightedElement.style.backgroundColor = this.highlightedStyles.backgroundColor ?? '';
+    this.highlightedElement.style.backgroundImage = this.highlightedStyles.backgroundImage ?? '';
+    this.highlightedElement.style.boxShadow = this.highlightedStyles.boxShadow ?? '';
+    this.highlightedElement.style.outline = this.highlightedStyles.outline ?? '';
+    this.highlightedElement.style.outlineOffset = this.highlightedStyles.outlineOffset ?? '';
+    this.highlightedElement.style.borderRadius = this.highlightedStyles.borderRadius ?? '';
 
     this.highlightedElement = null;
-    this.highlightedInlineStyle = null;
+    this.highlightedStyles = {};
   }
 
   private async translateElement(element: HTMLElement): Promise<void> {

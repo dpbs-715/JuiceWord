@@ -9,15 +9,16 @@ import {
 import { getSelectionForTranslation } from '../selection/selectionController';
 
 const CONTENT_APP_MARKER = '__juicewordContentAppMounted';
+const CONTENT_APP_VERSION = 'element-translate-v1';
 
 export function mountContentApp(): void {
-  const globalWindow = window as Window & { [CONTENT_APP_MARKER]?: boolean };
+  const globalWindow = window as Window & { [CONTENT_APP_MARKER]?: string };
 
-  if (globalWindow[CONTENT_APP_MARKER]) {
+  if (globalWindow[CONTENT_APP_MARKER] === CONTENT_APP_VERSION) {
     return;
   }
 
-  globalWindow[CONTENT_APP_MARKER] = true;
+  globalWindow[CONTENT_APP_MARKER] = CONTENT_APP_VERSION;
 
   const floating = new FloatingController();
   const elementTranslate = new ElementTranslateController();

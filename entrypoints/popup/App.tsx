@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { configService } from '../../src/config/configService';
-import type { ExtensionConfig, ModelProfile } from '../../src/config/configTypes';
+import type { ExtensionConfig } from '../../src/config/configTypes';
 import { setElementTranslateModeForActiveTab } from '../../src/messaging/messageClient';
 import { TARGET_LANGUAGES, getMessages } from '../../src/shared/i18n';
 
@@ -14,22 +14,8 @@ export default function App() {
   }, []);
 
   const t = getMessages(config?.uiLanguage ?? 'en');
-  const activeProfile = config ? getActiveProfile(config) : null;
 
-  async function handleProfileChange(profileId: string) {
-    if (!config) {
-      return;
-    }
-
-    const saved = await configService.saveConfig({
-      ...config,
-      activeModelProfileId: profileId,
-      comparisonModelProfileIds: getNextComparisonProfileIds(config, profileId),
-    });
-    setConfig(saved);
-  }
-
-  async function handleCompareToggle(profileId: string) {
+  async function handleModelToggle(profileId: string) {
     if (!config) {
       return;
     }
@@ -112,13 +98,12 @@ export default function App() {
             <span>{t.compareModels}</span>
           </div>
           {config.modelProfiles.map((profile) => {
-            const isActive = profile.id === activeProfile?.id;
             const isCompared = config.comparisonModelProfileIds.includes(profile.id);
             const isConfigured = Boolean(profile.baseUrl && profile.apiKey && profile.model);
 
             return (
-              <article className={`${isActive ? 'active' : ''} ${isConfigured ? '' : 'incomplete'}`} key={profile.id}>
-                <button type="button" onClick={() => void handleProfileChange(profile.id)}>
+              <article className={`${isCompared ? 'active' : ''} ${isConfigured ? '' : 'incomplete'}`} key={profile.id}>
+                <button type="button" onClick={() => void handleModelToggle(profile.id)}>
                   <span>{profile.name.slice(0, 1).toUpperCase()}</span>
                   <strong>{profile.name}</strong>
                   <small>{isConfigured ? profile.model : t.incompleteModelProfile}</small>
@@ -127,7 +112,7 @@ export default function App() {
                   <input
                     type="checkbox"
                     checked={isCompared}
-                    onChange={() => void handleCompareToggle(profile.id)}
+                    onChange={() => void handleModelToggle(profile.id)}
                     aria-label={t.compareToggle}
                   />
                   <span aria-hidden="true" />
@@ -165,13 +150,6 @@ export default function App() {
         {t.openOptions}
       </button>
     </main>
-  );
-}
-
-function getActiveProfile(config: ExtensionConfig): ModelProfile {
-  return (
-    config.modelProfiles.find((profile) => profile.id === config.activeModelProfileId) ??
-    config.modelProfiles[0]
   );
 }
 
