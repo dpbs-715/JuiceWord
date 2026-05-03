@@ -21,9 +21,6 @@ export const configService = {
     const normalized = normalizeConfig({
       ...config,
       activeModelProfileId: profileId,
-      comparisonModelProfileIds: config.comparisonModelProfileIds.includes(profileId)
-        ? config.comparisonModelProfileIds
-        : [...config.comparisonModelProfileIds, profileId],
     });
     await extensionStorage.set(CONFIG_KEY, normalized);
     return normalized;

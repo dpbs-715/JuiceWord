@@ -15,7 +15,15 @@ export default function App() {
   const activeProfile = config ? getActiveProfile(config) : null;
 
   async function handleProfileChange(profileId: string) {
-    const saved = await configService.setActiveModelProfile(profileId);
+    if (!config) {
+      return;
+    }
+
+    const saved = await configService.saveConfig({
+      ...config,
+      activeModelProfileId: profileId,
+      comparisonModelProfileIds: getNextComparisonProfileIds(config, profileId),
+    });
     setConfig(saved);
   }
 
@@ -24,16 +32,9 @@ export default function App() {
       return;
     }
 
-    const currentIds = config.comparisonModelProfileIds;
-    const nextIds = currentIds.includes(profileId)
-      ? currentIds.filter((id) => id !== profileId)
-      : [...currentIds, profileId];
-
-    if (nextIds.length === 0) {
-      return;
-    }
-
-    const saved = await configService.setComparisonModelProfiles(nextIds);
+    const saved = await configService.setComparisonModelProfiles(
+      getNextComparisonProfileIds(config, profileId),
+    );
     setConfig(saved);
   }
 
@@ -101,7 +102,9 @@ export default function App() {
                     type="checkbox"
                     checked={isCompared}
                     onChange={() => void handleCompareToggle(profile.id)}
+                    aria-label={t.compareToggle}
                   />
+                  <span aria-hidden="true" />
                 </label>
               </article>
             );
@@ -125,4 +128,18 @@ function getActiveProfile(config: ExtensionConfig): ModelProfile {
     config.modelProfiles.find((profile) => profile.id === config.activeModelProfileId) ??
     config.modelProfiles[0]
   );
+}
+
+function getNextComparisonProfileIds(config: ExtensionConfig, profileId: string): string[] {
+  const currentIds = config.comparisonModelProfileIds;
+
+  if (!currentIds.includes(profileId)) {
+    return [...currentIds, profileId];
+  }
+
+  if (currentIds.length <= 1) {
+    return currentIds;
+  }
+
+  return currentIds.filter((id) => id !== profileId);
 }

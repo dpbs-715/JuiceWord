@@ -148,6 +148,17 @@ select {
   border-radius: 8px;
   background: #fffdf8;
   padding: 5px;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.jw-popup__models article:hover {
+  border-color: rgba(255, 184, 0, 0.42);
+  background: #fff8e6;
+  box-shadow: 0 8px 18px rgba(255, 184, 0, 0.1);
 }
 
 .jw-popup__models article.active {
@@ -177,10 +188,6 @@ select {
   cursor: pointer;
   padding: 4px 6px;
   text-align: left;
-}
-
-.jw-popup__models article > button:hover {
-  background: rgba(255, 255, 255, 0.7);
 }
 
 .jw-popup__models button span {
@@ -221,18 +228,72 @@ select {
 
 .jw-popup__models label {
   display: grid;
+  position: relative;
   width: 32px;
   height: 32px;
   place-items: center;
   border-left: 1px solid #fff1c8;
   cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.jw-popup__models label:hover {
+  border-left-color: rgba(255, 184, 0, 0.34);
+  background: rgba(255, 244, 205, 0.72);
+  border-radius: 7px;
 }
 
 .jw-popup__models input {
-  width: 15px;
-  height: 15px;
-  accent-color: #ffb800;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
   margin: 0;
+}
+
+.jw-popup__models label > span {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1.5px solid #f7c65a;
+  border-radius: 6px;
+  background: #fffdf8;
+  box-shadow: inset 0 1px 2px rgba(154, 101, 0, 0.08);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.jw-popup__models label:hover > span {
+  border-color: #ffb800;
+  box-shadow:
+    inset 0 1px 2px rgba(154, 101, 0, 0.08),
+    0 0 0 3px rgba(255, 184, 0, 0.14);
+}
+
+.jw-popup__models input:focus-visible + span {
+  outline: 2px solid rgba(255, 184, 0, 0.55);
+  outline-offset: 2px;
+}
+
+.jw-popup__models input:checked + span {
+  border-color: #ffb800;
+  background: linear-gradient(145deg, #ffb800, #ffcf32);
+  box-shadow: 0 6px 12px rgba(255, 184, 0, 0.22);
+}
+
+.jw-popup__models input:checked + span::after {
+  width: 8px;
+  height: 4px;
+  border-bottom: 2px solid #142033;
+  border-left: 2px solid #142033;
+  content: "";
+  transform: rotate(-45deg) translateY(-1px);
 }
 
 .jw-popup__button {
