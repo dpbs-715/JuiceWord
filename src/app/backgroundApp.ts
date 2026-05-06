@@ -21,7 +21,7 @@ export function mountBackgroundApp(): void {
   });
 
   browser.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId !== CONTEXT_MENU_ID || !tab?.id) {
+    if (info.menuItemId !== CONTEXT_MENU_ID || !isValidTabId(tab?.id)) {
       return;
     }
 
@@ -33,6 +33,10 @@ export function mountBackgroundApp(): void {
   browser.runtime.onMessage.addListener(routeBackgroundMessage);
 }
 
+function isValidTabId(tabId: number | undefined): tabId is number {
+  return typeof tabId === 'number' && tabId >= 0;
+}
+
 async function createContextMenu(): Promise<void> {
   const config = await configService.getConfig();
   const title = getMessages(config.uiLanguage).contextMenu;
@@ -42,6 +46,7 @@ async function createContextMenu(): Promise<void> {
     id: CONTEXT_MENU_ID,
     title,
     contexts: ['selection'],
+    documentUrlPatterns: ['http://*/*', 'https://*/*'],
   });
 }
 

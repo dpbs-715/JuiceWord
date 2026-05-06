@@ -2,15 +2,20 @@ import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { configService } from '../../src/config/configService';
 import type { ExtensionConfig } from '../../src/config/configTypes';
-import { setElementTranslateModeForActiveTab } from '../../src/messaging/messageClient';
+import {
+  canUseElementTranslateOnActiveTab,
+  setElementTranslateModeForActiveTab,
+} from '../../src/messaging/messageClient';
 import { TARGET_LANGUAGES, getMessages } from '../../src/shared/i18n';
 
 export default function App() {
   const [config, setConfig] = useState<ExtensionConfig | null>(null);
   const [elementModeError, setElementModeError] = useState('');
+  const [canUseElementMode, setCanUseElementMode] = useState(false);
 
   useEffect(() => {
     void configService.getConfig().then(setConfig);
+    void canUseElementTranslateOnActiveTab().then(setCanUseElementMode);
   }, []);
 
   const t = getMessages(config?.uiLanguage ?? 'en');
@@ -134,9 +139,11 @@ export default function App() {
                 ))}
               </select>
             </label>
-            <button type="button" onClick={() => void handleEnableElementTranslateMode()}>
-              {t.elementTranslateMode}
-            </button>
+            {canUseElementMode ? (
+              <button type="button" onClick={() => void handleEnableElementTranslateMode()}>
+                {t.elementTranslateMode}
+              </button>
+            ) : null}
             {elementModeError ? <p>{elementModeError}</p> : null}
           </div>
         </section>

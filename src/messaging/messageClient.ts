@@ -31,20 +31,24 @@ export async function setElementTranslateModeForActiveTab(
   enabled: boolean,
 ): Promise<ElementTranslateModeResponse> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  const tabId = getValidElementTranslateTabId(tab);
 
-  if (!tab?.id) {
+  if (tabId === null) {
     return { ok: false, error: 'No active tab found.' };
   }
 
-  if (canInjectContentScript(tab.url)) {
-    const injected = await injectContentScript(tab.id);
+  const injected = await injectContentScript(tabId);
 
-    if (!injected.ok) {
-      return injected;
-    }
+  if (!injected.ok) {
+    return injected;
   }
 
-  return sendElementTranslateModeMessage(tab.id, enabled);
+  return sendElementTranslateModeMessage(tabId, enabled);
+}
+
+export async function canUseElementTranslateOnActiveTab(): Promise<boolean> {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  return getValidElementTranslateTabId(tab) !== null;
 }
 
 function isElementTranslateModeResponse(value: unknown): value is ElementTranslateModeResponse {
@@ -83,7 +87,38 @@ async function sendElementTranslateModeMessage(
 }
 
 function canInjectContentScript(url?: string): boolean {
-  return Boolean(url && /^https?:\/\//.test(url));
+  if (!url || !/^https?:\/\//.test(url)) {
+    return false;
+  }
+
+  return !isRestrictedExtensionPage(url);
+}
+
+function isValidTabId(tabId: number | undefined): tabId is number {
+  return typeof tabId === 'number' && tabId >= 0;
+}
+
+function getValidElementTranslateTabId(tab: { id?: number; url?: string } | undefined): number | null {
+  if (!tab || !isValidTabId(tab.id) || !canInjectContentScript(tab.url)) {
+    return null;
+  }
+
+  return tab.id;
+}
+
+function isRestrictedExtensionPage(url: string): boolean {
+  const restrictedHosts = new Set([
+    'chrome.google.com',
+    'chromewebstore.google.com',
+    'addons.mozilla.org',
+    'microsoftedge.microsoft.com',
+  ]);
+
+  try {
+    return restrictedHosts.has(new URL(url).hostname);
+  } catch {
+    return true;
+  }
 }
 
 async function injectContentScript(tabId: number): Promise<ElementTranslateModeResponse> {
