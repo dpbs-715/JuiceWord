@@ -99,8 +99,15 @@ export async function setLatestVisualRequirementContext(
 }
 
 export async function getLatestVisualRequirementContext(): Promise<VisualRequirementContextResponse> {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+
+  if (!isValidTabId(tab?.id)) {
+    return { ok: false, error: 'No active tab found.' };
+  }
+
   return browser.runtime.sendMessage({
     type: BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT,
+    payload: { tabId: tab.id },
   } satisfies BackgroundGetVisualRequirementContextMessage);
 }
 
@@ -114,12 +121,23 @@ export async function generateVisualRequirement(
 }
 
 function isModeResponse(value: unknown): value is ElementTranslateModeResponse | VisualRequirementModeResponse {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'ok' in value &&
-    typeof (value as { ok: unknown }).ok === 'boolean'
-  );
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (value.ok === true) {
+    return typeof value.enabled === 'boolean';
+  }
+
+  if (value.ok === false) {
+    return typeof value.error === 'string';
+  }
+
+  return false;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 async function sendElementTranslateModeMessage(

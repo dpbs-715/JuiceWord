@@ -59,6 +59,9 @@ export interface BackgroundSetVisualRequirementContextMessage {
 
 export interface BackgroundGetVisualRequirementContextMessage {
   type: typeof BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT;
+  payload: {
+    tabId: number;
+  };
 }
 
 export interface BackgroundGenerateVisualRequirementMessage {

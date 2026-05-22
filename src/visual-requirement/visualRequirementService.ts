@@ -9,20 +9,25 @@ import type {
   VisualRequirementGenerateResult,
 } from './visualRequirementTypes';
 
-let latestContext: SelectedElementContext | null = null;
+const latestContextsByTabId = new Map<number, SelectedElementContext>();
 
 export const visualRequirementService = {
-  setLatestContext(context: SelectedElementContext): SelectedElementContext {
-    latestContext = context;
+  setLatestContext(tabId: number, context: SelectedElementContext): SelectedElementContext {
+    assertValidTabId(tabId);
+    latestContextsByTabId.set(tabId, context);
     return context;
   },
 
-  getLatestContext(): SelectedElementContext {
-    if (!latestContext) {
+  getLatestContext(tabId: number): SelectedElementContext {
+    assertValidTabId(tabId);
+
+    const context = latestContextsByTabId.get(tabId);
+
+    if (!context) {
       throw new Error('No selected element context found. Start visual requirement capture from the popup first.');
     }
 
-    return latestContext;
+    return context;
   },
 
   async generateTask(
@@ -62,6 +67,12 @@ export const visualRequirementService = {
     };
   },
 };
+
+function assertValidTabId(tabId: number): void {
+  if (!Number.isInteger(tabId) || tabId < 0) {
+    throw new Error('No active tab found.');
+  }
+}
 
 function getVisualRequirementProfile(config: ExtensionConfig): ModelProfile | undefined {
   return (

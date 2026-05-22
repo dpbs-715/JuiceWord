@@ -15,7 +15,7 @@ import {
 
 export function routeBackgroundMessage(
   message: JuiceWordMessage,
-  _sender: unknown,
+  sender: { tab?: { id?: number } },
   sendResponse: (response: unknown) => void,
 ): boolean | undefined {
   if (message.type === BACKGROUND_TRANSLATE_TEXT) {
@@ -38,7 +38,7 @@ export function routeBackgroundMessage(
 
   if (message.type === BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT) {
     try {
-      const context = visualRequirementService.setLatestContext(message.payload.context);
+      const context = visualRequirementService.setLatestContext(getSenderTabId(sender), message.payload.context);
       sendResponse({ ok: true, context });
     } catch (error: unknown) {
       sendResponse({ ok: false, error: toVisualRequirementError(error) });
@@ -49,7 +49,7 @@ export function routeBackgroundMessage(
 
   if (message.type === BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT) {
     try {
-      sendResponse({ ok: true, context: visualRequirementService.getLatestContext() });
+      sendResponse({ ok: true, context: visualRequirementService.getLatestContext(message.payload.tabId) });
     } catch (error: unknown) {
       sendResponse({ ok: false, error: toVisualRequirementError(error) });
     }
@@ -67,4 +67,14 @@ export function routeBackgroundMessage(
   }
 
   return undefined;
+}
+
+function getSenderTabId(sender: { tab?: { id?: number } }): number {
+  const tabId = sender.tab?.id;
+
+  if (typeof tabId !== 'number' || tabId < 0) {
+    throw new Error('No active tab found.');
+  }
+
+  return tabId;
 }
