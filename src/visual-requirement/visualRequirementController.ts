@@ -153,6 +153,14 @@ function findSelectableElement(target: EventTarget | null): HTMLElement | null {
     return null;
   }
 
+  if (target.closest(`.${VISUAL_REQUIREMENT_OVERLAY_CLASS}, .${VISUAL_REQUIREMENT_STATUS_CLASS}`)) {
+    return null;
+  }
+
+  if (target.closest(VISUAL_REQUIREMENT_BLOCKED_SELECTOR)) {
+    return null;
+  }
+
   let element: HTMLElement | null = target;
 
   while (element && element !== document.body && element !== document.documentElement) {
