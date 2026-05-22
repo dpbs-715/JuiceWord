@@ -1,5 +1,7 @@
 import type { SelectedElementContext } from './visualRequirementTypes';
 
+const PAGE_TITLE_LIMIT = 120;
+
 export function buildVisualRequirementPrompt(context: SelectedElementContext, intent: string): string {
   return [
     'You are helping write an actionable UI change task for an AI coding agent.',
@@ -7,8 +9,8 @@ export function buildVisualRequirementPrompt(context: SelectedElementContext, in
     'Do not infer from or request full DOM HTML; use only the selected element summary and visual context below.',
     '',
     '## Selected Element',
-    `- Page title: ${context.page.title || '(untitled)'}`,
-    `- Page URL: ${context.page.url || '(unavailable)'}`,
+    `- Page title: ${formatPageTitle(context.page.title)}`,
+    `- Page URL: ${formatPageUrl(context.page.url)}`,
     `- Element: ${context.element.tagName}${context.element.role ? ` role="${context.element.role}"` : ''}`,
     `- Text: ${context.element.textContent || '(no visible text)'}`,
     `- Selector hint: ${context.element.selector || '(unavailable)'}`,
@@ -41,6 +43,45 @@ export function buildVisualRequirementPrompt(context: SelectedElementContext, in
     '- Mention accessibility contrast when colors or transparency are involved.',
     '- Keep the task implementation-oriented and avoid asking for more page DOM HTML.',
   ].join('\n');
+}
+
+function formatPageTitle(title: string): string {
+  const normalizedTitle = title.replace(/\s+/g, ' ').trim();
+
+  if (!normalizedTitle) {
+    return '(untitled)';
+  }
+
+  if (normalizedTitle.length <= PAGE_TITLE_LIMIT) {
+    return normalizedTitle;
+  }
+
+  return `${normalizedTitle.slice(0, PAGE_TITLE_LIMIT)}...`;
+}
+
+function formatPageUrl(url: string): string {
+  if (!url) {
+    return '(unavailable)';
+  }
+
+  try {
+    const parsedUrl = new URL(url);
+    return `${parsedUrl.origin}${parsedUrl.pathname}`;
+  } catch {
+    return stripUrlPrivateParts(url);
+  }
+}
+
+function stripUrlPrivateParts(url: string): string {
+  const queryIndex = url.indexOf('?');
+  const hashIndex = url.indexOf('#');
+  const privatePartIndexes = [queryIndex, hashIndex].filter((index) => index >= 0);
+
+  if (privatePartIndexes.length === 0) {
+    return url;
+  }
+
+  return url.slice(0, Math.min(...privatePartIndexes));
 }
 
 function formatParentContext(context: SelectedElementContext): string[] {
