@@ -4,18 +4,23 @@ import { configService } from '../../src/config/configService';
 import type { ExtensionConfig } from '../../src/config/configTypes';
 import {
   canUseElementTranslateOnActiveTab,
+  canUseVisualRequirementOnActiveTab,
   setElementTranslateModeForActiveTab,
+  setVisualRequirementModeForActiveTab,
 } from '../../src/messaging/messageClient';
 import { TARGET_LANGUAGES, getMessages } from '../../src/shared/i18n';
 
 export default function App() {
   const [config, setConfig] = useState<ExtensionConfig | null>(null);
   const [elementModeError, setElementModeError] = useState('');
+  const [visualRequirementError, setVisualRequirementError] = useState('');
   const [canUseElementMode, setCanUseElementMode] = useState(false);
+  const [canUseVisualRequirement, setCanUseVisualRequirement] = useState(false);
 
   useEffect(() => {
     void configService.getConfig().then(setConfig);
     void canUseElementTranslateOnActiveTab().then(setCanUseElementMode);
+    void canUseVisualRequirementOnActiveTab().then(setCanUseVisualRequirement);
   }, []);
 
   const t = getMessages(config?.uiLanguage ?? 'en');
@@ -61,6 +66,18 @@ export default function App() {
 
     if (!response?.ok) {
       setElementModeError(t.elementTranslateUnavailable);
+      return;
+    }
+
+    window.close();
+  }
+
+  async function handleEnableVisualRequirementMode() {
+    setVisualRequirementError('');
+    const response = await setVisualRequirementModeForActiveTab(true);
+
+    if (!response?.ok) {
+      setVisualRequirementError(response?.error || '当前页面无法启用视觉需求采集。');
       return;
     }
 
@@ -146,6 +163,14 @@ export default function App() {
             ) : null}
             {elementModeError ? <p>{elementModeError}</p> : null}
           </div>
+          {canUseVisualRequirement ? (
+            <div className="jw-popup__visual-requirement">
+              <button type="button" onClick={() => void handleEnableVisualRequirementMode()}>
+                视觉需求采集
+              </button>
+              {visualRequirementError ? <p>{visualRequirementError}</p> : null}
+            </div>
+          ) : null}
         </section>
       ) : null}
 

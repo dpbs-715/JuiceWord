@@ -81,7 +81,13 @@ export async function setVisualRequirementModeForActiveTab(
     return injected;
   }
 
-  return sendVisualRequirementModeMessage(tabId, enabled);
+  const response = await sendVisualRequirementModeMessage(tabId, enabled);
+
+  if (response.ok && response.enabled) {
+    await openSidePanelForTab(tabId);
+  }
+
+  return response;
 }
 
 export async function canUseVisualRequirementOnActiveTab(): Promise<boolean> {
@@ -243,4 +249,18 @@ async function injectContentScript(
       error: error instanceof Error ? error.message : 'Unable to inject the content script.',
     };
   }
+}
+
+type SidePanelApi = {
+  open?: (options: { tabId: number }) => Promise<void> | void;
+};
+
+async function openSidePanelForTab(tabId: number): Promise<void> {
+  const sidePanel = browser.sidePanel as SidePanelApi | undefined;
+
+  if (!sidePanel?.open) {
+    return;
+  }
+
+  await sidePanel.open({ tabId });
 }
