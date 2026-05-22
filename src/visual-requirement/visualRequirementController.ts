@@ -11,17 +11,21 @@ import {
   VISUAL_REQUIREMENT_OVERLAY_CLASS,
   VISUAL_REQUIREMENT_STATUS_CLASS,
   VISUAL_REQUIREMENT_STYLE_ID,
+  VISUAL_REQUIREMENT_TARGET_CLASS,
 } from './visualRequirementConstants';
 
 const MIN_SELECTABLE_WIDTH = 12;
 const MIN_SELECTABLE_HEIGHT = 8;
 const MAX_Z_INDEX = 2147483647;
+const MODE_CURSOR = `url("data:image/svg+xml,%3Csvg width='28' height='28' viewBox='0 0 28 28' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='shadow' x='-40%25' y='-40%25' width='180%25' height='180%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='1.6' flood-color='%23000000' flood-opacity='.28'/%3E%3C/filter%3E%3Cpath d='M14 2.8C10.1 7.7 7 11.4 7 15.7 7 20.2 10 23.4 14 23.4S21 20.2 21 15.7C21 11.4 17.9 7.7 14 2.8Z' fill='%23ffb800' filter='url(%23shadow)'/%3E%3Cpath d='M14 4.8C10.9 8.9 8.8 11.9 8.8 15.5 8.8 19 11 21.6 14 21.6S19.2 19 19.2 15.5C19.2 11.9 17.1 8.9 14 4.8Z' fill='%23ffcf32'/%3E%3Cpath d='M11.2 12.8C11.7 10.9 13 8.9 14 7.5' fill='none' stroke='%23fff8dc' stroke-width='1.7' stroke-linecap='round'/%3E%3Ccircle cx='17' cy='9.4' r='1.35' fill='%23fff8dc'/%3E%3C/svg%3E") 14 22, pointer`;
 
 export class VisualRequirementController {
   private enabled = false;
   private hoveredElement: HTMLElement | null = null;
   private overlay: HTMLDivElement | null = null;
   private status: HTMLDivElement | null = null;
+  private highlightedElement: HTMLElement | null = null;
+  private highlightedStyles: Partial<Record<string, string>> = {};
 
   setEnabled(enabled: boolean): boolean {
     if (enabled === this.enabled) {
@@ -64,6 +68,7 @@ export class VisualRequirementController {
 
   private unmount(): void {
     document.documentElement.classList.remove(VISUAL_REQUIREMENT_MODE_CLASS);
+    this.clearTargetHighlight();
     this.hoveredElement = null;
     this.overlay?.remove();
     this.status?.remove();
@@ -84,7 +89,9 @@ export class VisualRequirementController {
       return;
     }
 
+    this.clearTargetHighlight();
     this.hoveredElement = element;
+    this.applyTargetHighlight(element);
     this.syncOverlay();
   };
 
@@ -116,7 +123,7 @@ export class VisualRequirementController {
     this.syncOverlay();
   };
 
-  private readonly syncOverlay = (): void => {
+  private readonly syncOverlay = (state?: 'selected'): void => {
     if (!this.overlay || !this.hoveredElement) {
       this.hideOverlay();
       return;
@@ -130,6 +137,7 @@ export class VisualRequirementController {
     }
 
     this.overlay.style.display = 'block';
+    this.overlay.classList.toggle('selected', state === 'selected');
     this.overlay.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
     this.overlay.style.width = `${rect.width}px`;
     this.overlay.style.height = `${rect.height}px`;
@@ -143,8 +151,56 @@ export class VisualRequirementController {
     this.overlay.style.display = 'none';
   }
 
+  private applyTargetHighlight(element: HTMLElement | null): void {
+    if (!element || element === this.highlightedElement) {
+      return;
+    }
+
+    this.clearTargetHighlight();
+    this.highlightedElement = element;
+    this.highlightedStyles = {
+      backgroundColor: element.style.backgroundColor,
+      backgroundImage: element.style.backgroundImage,
+      boxShadow: element.style.boxShadow,
+      outline: element.style.outline,
+      outlineOffset: element.style.outlineOffset,
+      borderRadius: element.style.borderRadius,
+    };
+    element.classList.add(VISUAL_REQUIREMENT_TARGET_CLASS);
+    element.style.setProperty('background-color', 'rgba(255, 184, 0, 0.18)', 'important');
+    element.style.setProperty(
+      'background-image',
+      'linear-gradient(90deg, rgba(255, 184, 0, 0.22), rgba(255, 207, 50, 0.12))',
+      'important',
+    );
+    element.style.setProperty('box-shadow', 'inset 0 0 0 9999px rgba(255, 184, 0, 0.08)', 'important');
+    element.style.setProperty('outline', '2px solid rgba(255, 184, 0, 0.75)', 'important');
+    element.style.setProperty('outline-offset', '2px', 'important');
+    element.style.setProperty('border-radius', '6px', 'important');
+  }
+
+  private clearTargetHighlight(): void {
+    if (!this.highlightedElement) {
+      return;
+    }
+
+    this.highlightedElement.classList.remove(VISUAL_REQUIREMENT_TARGET_CLASS);
+    this.highlightedElement.style.backgroundColor = this.highlightedStyles.backgroundColor ?? '';
+    this.highlightedElement.style.backgroundImage = this.highlightedStyles.backgroundImage ?? '';
+    this.highlightedElement.style.boxShadow = this.highlightedStyles.boxShadow ?? '';
+    this.highlightedElement.style.outline = this.highlightedStyles.outline ?? '';
+    this.highlightedElement.style.outlineOffset = this.highlightedStyles.outlineOffset ?? '';
+    this.highlightedElement.style.borderRadius = this.highlightedStyles.borderRadius ?? '';
+
+    this.highlightedElement = null;
+    this.highlightedStyles = {};
+  }
+
   private async captureElement(element: HTMLElement): Promise<void> {
     const context = readSelectedElementContext(element);
+    this.hoveredElement = element;
+    this.applyTargetHighlight(element);
+    this.syncOverlay('selected');
     this.setEnabled(false);
     const response = await setLatestVisualRequirementContext(context);
 
@@ -216,7 +272,7 @@ function injectStyles(): void {
   style.id = VISUAL_REQUIREMENT_STYLE_ID;
   style.textContent = `
     html.${VISUAL_REQUIREMENT_MODE_CLASS}, html.${VISUAL_REQUIREMENT_MODE_CLASS} * {
-      cursor: crosshair !important;
+      cursor: ${MODE_CURSOR} !important;
     }
 
     .${VISUAL_REQUIREMENT_OVERLAY_CLASS} {
@@ -227,15 +283,33 @@ function injectStyles(): void {
       pointer-events: none;
       border: 2px solid rgba(255, 184, 0, 0.96);
       border-radius: 8px;
-      background: rgba(255, 207, 50, 0.18);
+      background:
+        linear-gradient(135deg, rgba(255, 184, 0, 0.28), rgba(255, 207, 50, 0.14));
+      mix-blend-mode: normal;
       box-shadow:
-        inset 0 0 0 9999px rgba(255, 184, 0, 0.1),
-        0 0 0 3px rgba(255, 184, 0, 0.24),
-        0 12px 28px rgba(154, 101, 0, 0.18);
+        inset 0 0 0 9999px rgba(255, 184, 0, 0.14),
+        0 0 0 3px rgba(255, 184, 0, 0.28),
+        0 10px 26px rgba(154, 101, 0, 0.18);
       transition:
         width 120ms ease,
         height 120ms ease,
-        transform 120ms ease;
+        transform 120ms ease,
+        box-shadow 160ms ease,
+        background-color 160ms ease;
+    }
+
+    .${VISUAL_REQUIREMENT_OVERLAY_CLASS}.selected {
+      background: rgba(255, 184, 0, 0.18);
+      box-shadow:
+        0 0 0 4px rgba(255, 184, 0, 0.22),
+        0 14px 32px rgba(154, 101, 0, 0.22);
+    }
+
+    .${VISUAL_REQUIREMENT_TARGET_CLASS} {
+      background-color: rgba(255, 184, 0, 0.18) !important;
+      background-image: linear-gradient(90deg, rgba(255, 184, 0, 0.2), rgba(255, 207, 50, 0.12)) !important;
+      box-shadow: inset 0 0 0 9999px rgba(255, 184, 0, 0.08) !important;
+      transition: background-color 120ms ease, background-image 120ms ease !important;
     }
 
     .${VISUAL_REQUIREMENT_STATUS_CLASS} {
