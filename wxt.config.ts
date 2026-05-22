@@ -5,7 +5,7 @@ export default defineConfig({
     name: 'JuiceWord',
     description: 'Selection-based translation powered by OpenAI-compatible APIs.',
     version: '1.1.0',
-    permissions: ['contextMenus', 'storage', 'activeTab', 'scripting'],
+    permissions: ['contextMenus', 'storage', 'activeTab', 'scripting', 'sidePanel'],
     host_permissions: ['<all_urls>'],
     icons: {
       16: 'assets/juiceword/icons/icon-16.png',
@@ -20,6 +20,9 @@ export default defineConfig({
         48: 'assets/juiceword/icons/icon-48.png',
         128: 'assets/juiceword/icons/icon-128.png',
       },
+    },
+    side_panel: {
+      default_path: 'sidepanel.html',
     },
     web_accessible_resources: [
       {
