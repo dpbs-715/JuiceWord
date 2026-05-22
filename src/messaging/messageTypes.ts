@@ -1,21 +1,10 @@
 import type { SelectionSnapshot } from '../selection/selectionTypes';
 import type { TranslationResult } from '../translator/translatorTypes';
-import type {
-  SelectedElementContext,
-  VisualRequirementContextResponse,
-  VisualRequirementGenerateRequest,
-  VisualRequirementGenerateResponse,
-} from '../visual-requirement/visualRequirementTypes';
 
 export const CONTENT_TRANSLATE_SELECTION = 'JUICEWORD_CONTENT_TRANSLATE_SELECTION';
 export const CONTENT_SET_ELEMENT_TRANSLATE_MODE = 'JUICEWORD_CONTENT_SET_ELEMENT_TRANSLATE_MODE';
-export const CONTENT_SET_VISUAL_REQUIREMENT_MODE = 'JUICEWORD_CONTENT_SET_VISUAL_REQUIREMENT_MODE';
 export const BACKGROUND_TRANSLATE_TEXT = 'JUICEWORD_BACKGROUND_TRANSLATE_TEXT';
 export const BACKGROUND_TRANSLATE_ELEMENT_TEXT = 'JUICEWORD_BACKGROUND_TRANSLATE_ELEMENT_TEXT';
-export const BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT = 'JUICEWORD_BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT';
-export const BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT = 'JUICEWORD_BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT';
-export const BACKGROUND_GENERATE_VISUAL_REQUIREMENT = 'JUICEWORD_BACKGROUND_GENERATE_VISUAL_REQUIREMENT';
-export const VISUAL_REQUIREMENT_CONTEXT_UPDATED = 'JUICEWORD_VISUAL_REQUIREMENT_CONTEXT_UPDATED';
 
 export interface ContentTranslateSelectionMessage {
   type: typeof CONTENT_TRANSLATE_SELECTION;
@@ -23,13 +12,6 @@ export interface ContentTranslateSelectionMessage {
 
 export interface ContentSetElementTranslateModeMessage {
   type: typeof CONTENT_SET_ELEMENT_TRANSLATE_MODE;
-  payload: {
-    enabled: boolean;
-  };
-}
-
-export interface ContentSetVisualRequirementModeMessage {
-  type: typeof CONTENT_SET_VISUAL_REQUIREMENT_MODE;
   payload: {
     enabled: boolean;
   };
@@ -51,42 +33,11 @@ export interface BackgroundTranslateElementTextMessage {
   };
 }
 
-export interface BackgroundSetVisualRequirementContextMessage {
-  type: typeof BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT;
-  payload: {
-    context: SelectedElementContext;
-  };
-}
-
-export interface BackgroundGetVisualRequirementContextMessage {
-  type: typeof BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT;
-  payload: {
-    tabId: number;
-  };
-}
-
-export interface BackgroundGenerateVisualRequirementMessage {
-  type: typeof BACKGROUND_GENERATE_VISUAL_REQUIREMENT;
-  payload: VisualRequirementGenerateRequest;
-}
-
-export interface VisualRequirementContextUpdatedMessage {
-  type: typeof VISUAL_REQUIREMENT_CONTEXT_UPDATED;
-  payload: {
-    contextId: string;
-  };
-}
-
 export type JuiceWordMessage =
   | ContentTranslateSelectionMessage
   | ContentSetElementTranslateModeMessage
-  | ContentSetVisualRequirementModeMessage
   | BackgroundTranslateTextMessage
-  | BackgroundTranslateElementTextMessage
-  | BackgroundSetVisualRequirementContextMessage
-  | BackgroundGetVisualRequirementContextMessage
-  | BackgroundGenerateVisualRequirementMessage
-  | VisualRequirementContextUpdatedMessage;
+  | BackgroundTranslateElementTextMessage;
 
 export type TranslateTextResponse =
   | { ok: true; result: TranslationResult }
@@ -95,12 +46,3 @@ export type TranslateTextResponse =
 export type ElementTranslateModeResponse =
   | { ok: true; enabled: boolean }
   | { ok: false; error: string };
-
-export type VisualRequirementModeResponse =
-  | { ok: true; enabled: boolean }
-  | { ok: false; error: string };
-
-export type {
-  VisualRequirementContextResponse,
-  VisualRequirementGenerateResponse,
-};

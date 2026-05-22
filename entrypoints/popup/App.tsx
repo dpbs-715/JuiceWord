@@ -4,23 +4,18 @@ import { configService } from '../../src/config/configService';
 import type { ExtensionConfig } from '../../src/config/configTypes';
 import {
   canUseElementTranslateOnActiveTab,
-  canUseVisualRequirementOnActiveTab,
   setElementTranslateModeForActiveTab,
-  setVisualRequirementModeForActiveTab,
 } from '../../src/messaging/messageClient';
 import { TARGET_LANGUAGES, getMessages } from '../../src/shared/i18n';
 
 export default function App() {
   const [config, setConfig] = useState<ExtensionConfig | null>(null);
   const [elementModeError, setElementModeError] = useState('');
-  const [visualRequirementError, setVisualRequirementError] = useState('');
   const [canUseElementMode, setCanUseElementMode] = useState(false);
-  const [canUseVisualRequirement, setCanUseVisualRequirement] = useState(false);
 
   useEffect(() => {
     void configService.getConfig().then(setConfig);
     void canUseElementTranslateOnActiveTab().then(setCanUseElementMode);
-    void canUseVisualRequirementOnActiveTab().then(setCanUseVisualRequirement);
   }, []);
 
   const t = getMessages(config?.uiLanguage ?? 'en');
@@ -72,18 +67,6 @@ export default function App() {
     window.close();
   }
 
-  async function handleEnableVisualRequirementMode() {
-    setVisualRequirementError('');
-    const response = await setVisualRequirementModeForActiveTab(true);
-
-    if (!response?.ok) {
-      setVisualRequirementError(response?.error || '当前页面无法启用视觉需求采集。');
-      return;
-    }
-
-    window.close();
-  }
-
   return (
     <main className="jw-popup">
       <section className="jw-popup__top">
@@ -125,11 +108,7 @@ export default function App() {
 
             return (
               <article className={`${isCompared ? 'active' : ''} ${isConfigured ? '' : 'incomplete'}`} key={profile.id}>
-                <button
-                  type="button"
-                  aria-pressed={isCompared}
-                  onClick={() => void handleModelToggle(profile.id)}
-                >
+                <button type="button" onClick={() => void handleModelToggle(profile.id)}>
                   <span>{profile.name.slice(0, 1).toUpperCase()}</span>
                   <strong>{profile.name}</strong>
                   <small>{isConfigured ? profile.model : t.incompleteModelProfile}</small>
@@ -167,14 +146,6 @@ export default function App() {
             ) : null}
             {elementModeError ? <p>{elementModeError}</p> : null}
           </div>
-          {canUseVisualRequirement ? (
-            <div className="jw-popup__visual-requirement">
-              <button type="button" onClick={() => void handleEnableVisualRequirementMode()}>
-                视觉需求采集
-              </button>
-              {visualRequirementError ? <p>{visualRequirementError}</p> : null}
-            </div>
-          ) : null}
         </section>
       ) : null}
 

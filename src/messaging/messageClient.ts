@@ -1,27 +1,13 @@
 import { browser } from 'wxt/browser';
 import {
-  BACKGROUND_GENERATE_VISUAL_REQUIREMENT,
-  BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT,
-  BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT,
   BACKGROUND_TRANSLATE_ELEMENT_TEXT,
   BACKGROUND_TRANSLATE_TEXT,
   CONTENT_SET_ELEMENT_TRANSLATE_MODE,
-  CONTENT_SET_VISUAL_REQUIREMENT_MODE,
-  type BackgroundGenerateVisualRequirementMessage,
-  type BackgroundGetVisualRequirementContextMessage,
-  type BackgroundSetVisualRequirementContextMessage,
   type BackgroundTranslateElementTextMessage,
   type BackgroundTranslateTextMessage,
   type ElementTranslateModeResponse,
   type TranslateTextResponse,
-  type VisualRequirementContextResponse,
-  type VisualRequirementGenerateResponse,
-  type VisualRequirementModeResponse,
 } from './messageTypes';
-import type {
-  SelectedElementContext,
-  VisualRequirementGenerateRequest,
-} from '../visual-requirement/visualRequirementTypes';
 
 export async function requestTranslation(
   payload: BackgroundTranslateTextMessage['payload'],
@@ -45,7 +31,7 @@ export async function setElementTranslateModeForActiveTab(
   enabled: boolean,
 ): Promise<ElementTranslateModeResponse> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  const tabId = getValidInjectableTabId(tab);
+  const tabId = getValidElementTranslateTabId(tab);
 
   if (tabId === null) {
     return { ok: false, error: 'No active tab found.' };
@@ -62,93 +48,16 @@ export async function setElementTranslateModeForActiveTab(
 
 export async function canUseElementTranslateOnActiveTab(): Promise<boolean> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  return getValidInjectableTabId(tab) !== null;
+  return getValidElementTranslateTabId(tab) !== null;
 }
 
-export async function setVisualRequirementModeForActiveTab(
-  enabled: boolean,
-): Promise<VisualRequirementModeResponse> {
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  const tabId = getValidInjectableTabId(tab);
-
-  if (tabId === null) {
-    return { ok: false, error: 'No supported active tab found.' };
-  }
-
-  const injected = await injectContentScript(tabId);
-
-  if (!injected.ok) {
-    return injected;
-  }
-
-  const response = await sendVisualRequirementModeMessage(tabId, enabled);
-
-  if (response.ok && response.enabled) {
-    const sidePanelResponse = await openSidePanelForTab(tabId);
-
-    if (!sidePanelResponse.ok) {
-      await sendVisualRequirementModeMessage(tabId, false);
-      return sidePanelResponse;
-    }
-  }
-
-  return response;
-}
-
-export async function canUseVisualRequirementOnActiveTab(): Promise<boolean> {
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  return getValidInjectableTabId(tab) !== null;
-}
-
-export async function setLatestVisualRequirementContext(
-  context: SelectedElementContext,
-): Promise<VisualRequirementContextResponse> {
-  return browser.runtime.sendMessage({
-    type: BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT,
-    payload: { context },
-  } satisfies BackgroundSetVisualRequirementContextMessage);
-}
-
-export async function getLatestVisualRequirementContext(): Promise<VisualRequirementContextResponse> {
-  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-
-  if (!isValidTabId(tab?.id)) {
-    return { ok: false, error: 'No active tab found.' };
-  }
-
-  return browser.runtime.sendMessage({
-    type: BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT,
-    payload: { tabId: tab.id },
-  } satisfies BackgroundGetVisualRequirementContextMessage);
-}
-
-export async function generateVisualRequirement(
-  payload: VisualRequirementGenerateRequest,
-): Promise<VisualRequirementGenerateResponse> {
-  return browser.runtime.sendMessage({
-    type: BACKGROUND_GENERATE_VISUAL_REQUIREMENT,
-    payload,
-  } satisfies BackgroundGenerateVisualRequirementMessage);
-}
-
-function isModeResponse(value: unknown): value is ElementTranslateModeResponse | VisualRequirementModeResponse {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  if (value.ok === true) {
-    return typeof value.enabled === 'boolean';
-  }
-
-  if (value.ok === false) {
-    return typeof value.error === 'string';
-  }
-
-  return false;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+function isElementTranslateModeResponse(value: unknown): value is ElementTranslateModeResponse {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'ok' in value &&
+    typeof (value as { ok: unknown }).ok === 'boolean'
+  );
 }
 
 async function sendElementTranslateModeMessage(
@@ -161,33 +70,7 @@ async function sendElementTranslateModeMessage(
       payload: { enabled },
     });
 
-    if (isModeResponse(response)) {
-      return response;
-    }
-
-    return {
-      ok: false,
-      error: 'The active tab did not respond.',
-    };
-  } catch (error: unknown) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : 'Unable to contact the active tab.',
-    };
-  }
-}
-
-async function sendVisualRequirementModeMessage(
-  tabId: number,
-  enabled: boolean,
-): Promise<VisualRequirementModeResponse> {
-  try {
-    const response = await browser.tabs.sendMessage(tabId, {
-      type: CONTENT_SET_VISUAL_REQUIREMENT_MODE,
-      payload: { enabled },
-    });
-
-    if (isModeResponse(response)) {
+    if (isElementTranslateModeResponse(response)) {
       return response;
     }
 
@@ -215,7 +98,7 @@ function isValidTabId(tabId: number | undefined): tabId is number {
   return typeof tabId === 'number' && tabId >= 0;
 }
 
-function getValidInjectableTabId(tab: { id?: number; url?: string } | undefined): number | null {
+function getValidElementTranslateTabId(tab: { id?: number; url?: string } | undefined): number | null {
   if (!tab || !isValidTabId(tab.id) || !canInjectContentScript(tab.url)) {
     return null;
   }
@@ -238,9 +121,7 @@ function isRestrictedExtensionPage(url: string): boolean {
   }
 }
 
-async function injectContentScript(
-  tabId: number,
-): Promise<ElementTranslateModeResponse | VisualRequirementModeResponse> {
+async function injectContentScript(tabId: number): Promise<ElementTranslateModeResponse> {
   try {
     await browser.scripting.executeScript({
       target: { tabId },
@@ -252,33 +133,6 @@ async function injectContentScript(
     return {
       ok: false,
       error: error instanceof Error ? error.message : 'Unable to inject the content script.',
-    };
-  }
-}
-
-type SidePanelApi = {
-  open?: (options: { tabId: number }) => Promise<void> | void;
-};
-
-async function openSidePanelForTab(tabId: number): Promise<VisualRequirementModeResponse> {
-  const sidePanel = browser.sidePanel as SidePanelApi | undefined;
-
-  if (!sidePanel?.open) {
-    return {
-      ok: false,
-      error: 'Unable to open the visual requirement side panel.',
-    };
-  }
-
-  try {
-    await sidePanel.open({ tabId });
-    return { ok: true, enabled: true };
-  } catch (error: unknown) {
-    return {
-      ok: false,
-      error: error instanceof Error
-        ? `Unable to open the visual requirement side panel: ${error.message}`
-        : 'Unable to open the visual requirement side panel.',
     };
   }
 }

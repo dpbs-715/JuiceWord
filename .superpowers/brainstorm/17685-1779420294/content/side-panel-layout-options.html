@@ -1,0 +1,70 @@
+<h2>Side Panel V1 Layout</h2>
+<p class="subtitle">Choose how JuiceWord should arrange the selected element context, user intent, and generated UI change task.</p>
+
+<div class="cards">
+  <div class="card" data-choice="focused" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="margin:0">
+        <div class="mockup-header">Focused Writer</div>
+        <div class="mockup-body">
+          <div class="label">Selected Element</div>
+          <div class="placeholder" style="height:56px">button · 保存 · 120 x 40 · yellow</div>
+          <div class="label">Intent</div>
+          <input class="mock-input" placeholder="更通透，更像黄色液体">
+          <button class="mock-button">Generate Task</button>
+          <div class="label">Result</div>
+          <div class="placeholder" style="height:130px">Markdown task output</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. Focused Writer</h3>
+      <p>One linear flow: element summary, intent box, generate button, result. Smallest and easiest to ship.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="inspector" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="margin:0">
+        <div class="mockup-header">Inspector + Output</div>
+        <div class="mockup-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <div class="label">Element</div>
+              <div class="placeholder" style="height:150px">type, text, selector, size, colors, spacing</div>
+            </div>
+            <div>
+              <div class="label">Task</div>
+              <input class="mock-input" placeholder="修改意图">
+              <button class="mock-button">Generate</button>
+              <div class="placeholder" style="height:82px">result preview</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. Inspector + Output</h3>
+      <p>More like a tool: structured context stays visible next to the generated result. Better for power users.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="steps" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup" style="margin:0">
+        <div class="mockup-header">Step Flow</div>
+        <div class="mockup-body">
+          <div class="options" style="gap:8px">
+            <div class="option" style="padding:10px"><div class="letter">1</div><div class="content"><h3>Select</h3><p>Element captured</p></div></div>
+            <div class="option" style="padding:10px"><div class="letter">2</div><div class="content"><h3>Describe</h3><p>User intent</p></div></div>
+            <div class="option" style="padding:10px"><div class="letter">3</div><div class="content"><h3>Generate</h3><p>Copy Markdown</p></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. Step Flow</h3>
+      <p>Very beginner-friendly, but adds state and navigation that may be too much for V1.</p>
+    </div>
+  </div>
+</div>

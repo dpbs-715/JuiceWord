@@ -1,13 +1,6 @@
 import { getErrorMessage } from '../shared/errors';
 import { translatorService } from '../translator/translatorService';
 import {
-  toVisualRequirementError,
-  visualRequirementService,
-} from '../visual-requirement/visualRequirementService';
-import {
-  BACKGROUND_GENERATE_VISUAL_REQUIREMENT,
-  BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT,
-  BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT,
   BACKGROUND_TRANSLATE_ELEMENT_TEXT,
   BACKGROUND_TRANSLATE_TEXT,
   type JuiceWordMessage,
@@ -15,7 +8,7 @@ import {
 
 export function routeBackgroundMessage(
   message: JuiceWordMessage,
-  sender: { tab?: { id?: number } },
+  _sender: unknown,
   sendResponse: (response: unknown) => void,
 ): boolean | undefined {
   if (message.type === BACKGROUND_TRANSLATE_TEXT) {
@@ -36,45 +29,5 @@ export function routeBackgroundMessage(
     return true;
   }
 
-  if (message.type === BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT) {
-    try {
-      const context = visualRequirementService.setLatestContext(getSenderTabId(sender), message.payload.context);
-      sendResponse({ ok: true, context });
-    } catch (error: unknown) {
-      sendResponse({ ok: false, error: toVisualRequirementError(error) });
-    }
-
-    return undefined;
-  }
-
-  if (message.type === BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT) {
-    try {
-      sendResponse({ ok: true, context: visualRequirementService.getLatestContext(message.payload.tabId) });
-    } catch (error: unknown) {
-      sendResponse({ ok: false, error: toVisualRequirementError(error) });
-    }
-
-    return undefined;
-  }
-
-  if (message.type === BACKGROUND_GENERATE_VISUAL_REQUIREMENT) {
-    void visualRequirementService
-      .generateTask(message.payload.context, message.payload.intent)
-      .then((result) => sendResponse({ ok: true, result }))
-      .catch((error: unknown) => sendResponse({ ok: false, error: toVisualRequirementError(error) }));
-
-    return true;
-  }
-
   return undefined;
-}
-
-function getSenderTabId(sender: { tab?: { id?: number } }): number {
-  const tabId = sender.tab?.id;
-
-  if (typeof tabId !== 'number' || tabId < 0) {
-    throw new Error('No active tab found.');
-  }
-
-  return tabId;
 }
