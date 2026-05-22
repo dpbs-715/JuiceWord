@@ -1,5 +1,6 @@
 # Local JuiceWord planning notes
 /juiceword-local-*.md
+/.superpowers/
 
 # Dependencies and build output
 /node_modules/
