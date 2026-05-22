@@ -50,6 +50,14 @@ export interface VisualRequirementGenerateResult {
   modelProfileName: string;
 }
 
+export type VisualRequirementContextResponse =
+  | { ok: true; context: SelectedElementContext }
+  | { ok: false; error: string };
+
+export type VisualRequirementGenerateResponse =
+  | { ok: true; result: VisualRequirementGenerateResult }
+  | { ok: false; error: string };
+
 export type VisualRequirementPanelState =
   | { status: 'empty' }
   | { status: 'ready'; context: SelectedElementContext }
