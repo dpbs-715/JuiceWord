@@ -15,6 +15,7 @@ export const BACKGROUND_TRANSLATE_ELEMENT_TEXT = 'JUICEWORD_BACKGROUND_TRANSLATE
 export const BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT = 'JUICEWORD_BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT';
 export const BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT = 'JUICEWORD_BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT';
 export const BACKGROUND_GENERATE_VISUAL_REQUIREMENT = 'JUICEWORD_BACKGROUND_GENERATE_VISUAL_REQUIREMENT';
+export const VISUAL_REQUIREMENT_CONTEXT_UPDATED = 'JUICEWORD_VISUAL_REQUIREMENT_CONTEXT_UPDATED';
 
 export interface ContentTranslateSelectionMessage {
   type: typeof CONTENT_TRANSLATE_SELECTION;
@@ -69,6 +70,13 @@ export interface BackgroundGenerateVisualRequirementMessage {
   payload: VisualRequirementGenerateRequest;
 }
 
+export interface VisualRequirementContextUpdatedMessage {
+  type: typeof VISUAL_REQUIREMENT_CONTEXT_UPDATED;
+  payload: {
+    context: SelectedElementContext;
+  };
+}
+
 export type JuiceWordMessage =
   | ContentTranslateSelectionMessage
   | ContentSetElementTranslateModeMessage
@@ -77,7 +85,8 @@ export type JuiceWordMessage =
   | BackgroundTranslateElementTextMessage
   | BackgroundSetVisualRequirementContextMessage
   | BackgroundGetVisualRequirementContextMessage
-  | BackgroundGenerateVisualRequirementMessage;
+  | BackgroundGenerateVisualRequirementMessage
+  | VisualRequirementContextUpdatedMessage;
 
 export type TranslateTextResponse =
   | { ok: true; result: TranslationResult }

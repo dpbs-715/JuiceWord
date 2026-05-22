@@ -1,3 +1,8 @@
+import { browser } from 'wxt/browser';
+import {
+  VISUAL_REQUIREMENT_CONTEXT_UPDATED,
+  type VisualRequirementContextUpdatedMessage,
+} from '../messaging/messageTypes';
 import { setLatestVisualRequirementContext } from '../messaging/messageClient';
 import { readSelectedElementContext } from './elementContextReader';
 import {
@@ -141,7 +146,16 @@ export class VisualRequirementController {
   private async captureElement(element: HTMLElement): Promise<void> {
     const context = readSelectedElementContext(element);
     this.setEnabled(false);
-    await setLatestVisualRequirementContext(context);
+    const response = await setLatestVisualRequirementContext(context);
+
+    if (!response.ok) {
+      return;
+    }
+
+    void browser.runtime.sendMessage({
+      type: VISUAL_REQUIREMENT_CONTEXT_UPDATED,
+      payload: { context },
+    } satisfies VisualRequirementContextUpdatedMessage).catch(() => undefined);
   }
 }
 

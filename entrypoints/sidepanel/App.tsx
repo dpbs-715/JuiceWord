@@ -6,11 +6,16 @@ import {
   generateVisualRequirement,
   getLatestVisualRequirementContext,
 } from '../../src/messaging/messageClient';
+import {
+  VISUAL_REQUIREMENT_CONTEXT_UPDATED,
+  type JuiceWordMessage,
+} from '../../src/messaging/messageTypes';
 import type {
   SelectedElementContext,
   VisualRequirementPanelState,
 } from '../../src/visual-requirement/visualRequirementTypes';
 
+const CONFIG_STORAGE_KEY = 'juiceword.config';
 const COPY_RESET_DELAY = 1400;
 type CopyStatus = 'idle' | 'copied' | 'error';
 
@@ -54,10 +59,38 @@ export default function App() {
       void refreshContext();
     };
 
+    const handleRuntimeMessage = (message: unknown) => {
+      if (!isVisualRequirementContextUpdatedMessage(message)) {
+        return;
+      }
+
+      setCopyStatus('idle');
+      setState((current) => {
+        if (current.status === 'generating') {
+          return current;
+        }
+
+        return { status: 'ready', context: message.payload.context };
+      });
+    };
+
+    const handleStorageChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) => {
+      if (areaName === 'local' && changes[CONFIG_STORAGE_KEY]) {
+        void refreshConfig();
+      }
+    };
+
     window.addEventListener('focus', handleFocus);
+    browser.runtime.onMessage.addListener(handleRuntimeMessage);
+    browser.storage.onChanged.addListener(handleStorageChange);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
+      browser.runtime.onMessage.removeListener(handleRuntimeMessage);
+      browser.storage.onChanged.removeListener(handleStorageChange);
       clearCopyResetTimeout(copyResetTimeoutRef);
     };
   }, [refreshConfig, refreshContext]);
@@ -203,6 +236,21 @@ function ElementSummary({ context }: { context: SelectedElementContext }) {
 
 function getActiveProfile(config: ExtensionConfig | null): ModelProfile | undefined {
   return config?.modelProfiles.find((profile) => profile.id === config.activeModelProfileId);
+}
+
+function isVisualRequirementContextUpdatedMessage(
+  message: unknown,
+): message is Extract<JuiceWordMessage, { type: typeof VISUAL_REQUIREMENT_CONTEXT_UPDATED }> {
+  return (
+    isRecord(message) &&
+    message.type === VISUAL_REQUIREMENT_CONTEXT_UPDATED &&
+    isRecord(message.payload) &&
+    isRecord(message.payload.context)
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 function isCompleteModelProfile(profile: ModelProfile | undefined): profile is ModelProfile {
