@@ -192,6 +192,11 @@ button {
   box-shadow: 0 0 0 3px rgba(255, 184, 0, 0.18);
 }
 
+.jw-sidepanel__editor textarea:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
 .jw-sidepanel__primary,
 .jw-sidepanel__link,
 .jw-sidepanel__error button,

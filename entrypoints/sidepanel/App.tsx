@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { configService } from '../../src/config/configService';
 import type { ExtensionConfig, ModelProfile } from '../../src/config/configTypes';
@@ -12,21 +12,55 @@ import type {
 } from '../../src/visual-requirement/visualRequirementTypes';
 
 const COPY_RESET_DELAY = 1400;
+type CopyStatus = 'idle' | 'copied' | 'error';
 
 export default function App() {
   const [config, setConfig] = useState<ExtensionConfig | null>(null);
   const [state, setState] = useState<VisualRequirementPanelState>({ status: 'empty' });
   const [intent, setIntent] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle');
+  const copyResetTimeoutRef = useRef<number | null>(null);
+
+  const refreshConfig = useCallback(async () => {
+    const nextConfig = await configService.getConfig();
+    setConfig(nextConfig);
+    return nextConfig;
+  }, []);
+
+  const refreshContext = useCallback(async () => {
+    const response = await getLatestVisualRequirementContext();
+
+    if (response.ok) {
+      const nextContext = response.context;
+      setState((current) => {
+        if (current.status === 'generating' || getStateContext(current)?.id === nextContext.id) {
+          return current;
+        }
+
+        return { status: 'ready', context: nextContext };
+      });
+      return nextContext;
+    }
+
+    return null;
+  }, []);
 
   useEffect(() => {
-    void configService.getConfig().then(setConfig);
-    void getLatestVisualRequirementContext().then((response) => {
-      if (response.ok) {
-        setState({ status: 'ready', context: response.context });
-      }
-    });
-  }, []);
+    void refreshConfig();
+    void refreshContext();
+
+    const handleFocus = () => {
+      void refreshConfig();
+      void refreshContext();
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearCopyResetTimeout(copyResetTimeoutRef);
+    };
+  }, [refreshConfig, refreshContext]);
 
   const context = 'context' in state ? state.context : null;
   const activeProfile = useMemo(() => getActiveProfile(config), [config]);
@@ -40,23 +74,36 @@ export default function App() {
     }
 
     const nextIntent = intent.trim();
-    setCopied(false);
-    setState({ status: 'generating', context, intent: nextIntent });
+    setCopyStatus('idle');
 
-    const response = await generateVisualRequirement({ context, intent: nextIntent });
+    const latestContext = await refreshContext();
+    const generationContext = latestContext ?? context;
+    setState({ status: 'generating', context: generationContext, intent: nextIntent });
+
+    const response = await generateVisualRequirement({ context: generationContext, intent: nextIntent });
 
     if (!response.ok) {
-      setState({ status: 'error', context, intent: nextIntent, error: response.error });
+      setState({ status: 'error', context: generationContext, intent: nextIntent, error: response.error });
       return;
     }
 
-    setState({ status: 'success', context, intent: nextIntent, markdown: response.result.markdown });
+    setState({ status: 'success', context: generationContext, intent: nextIntent, markdown: response.result.markdown });
   }
 
   async function handleCopy(markdown: string) {
-    await navigator.clipboard.writeText(markdown);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), COPY_RESET_DELAY);
+    clearCopyResetTimeout(copyResetTimeoutRef);
+
+    try {
+      await navigator.clipboard.writeText(markdown);
+      setCopyStatus('copied');
+    } catch {
+      setCopyStatus('error');
+    }
+
+    copyResetTimeoutRef.current = window.setTimeout(() => {
+      setCopyStatus('idle');
+      copyResetTimeoutRef.current = null;
+    }, COPY_RESET_DELAY);
   }
 
   return (
@@ -85,6 +132,7 @@ export default function App() {
           value={intent}
           onChange={(event) => setIntent(event.target.value)}
           placeholder="例如：把这个按钮调整得更轻盈，强调黄色果汁感，但不要改变当前布局。"
+          disabled={isGenerating}
           rows={5}
         />
         {!isProfileComplete ? (
@@ -121,7 +169,7 @@ export default function App() {
           <div>
             <strong>生成结果</strong>
             <button type="button" onClick={() => void handleCopy(state.markdown)}>
-              {copied ? '已复制' : '复制'}
+              {getCopyLabel(copyStatus)}
             </button>
           </div>
           <pre>{state.markdown}</pre>
@@ -161,6 +209,10 @@ function isCompleteModelProfile(profile: ModelProfile | undefined): profile is M
   return Boolean(profile?.baseUrl && profile.apiKey && profile.model);
 }
 
+function getStateContext(state: VisualRequirementPanelState): SelectedElementContext | null {
+  return 'context' in state ? state.context : null;
+}
+
 function formatSummary(context: SelectedElementContext): string {
   const text = context.element.textContent ? ` · ${context.element.textContent}` : '';
   return `${context.element.tagName}${text} · ${context.element.boundingRect.width}x${context.element.boundingRect.height}`;
@@ -185,4 +237,25 @@ function formatParentChain(context: SelectedElementContext): string {
   return context.parentChain
     .map((parent) => `${parent.tagName} ${parent.selector}`)
     .join(' / ');
+}
+
+function clearCopyResetTimeout(timeoutRef: { current: number | null }): void {
+  if (timeoutRef.current === null) {
+    return;
+  }
+
+  window.clearTimeout(timeoutRef.current);
+  timeoutRef.current = null;
+}
+
+function getCopyLabel(status: CopyStatus): string {
+  if (status === 'copied') {
+    return '已复制';
+  }
+
+  if (status === 'error') {
+    return '复制失败';
+  }
+
+  return '复制';
 }
