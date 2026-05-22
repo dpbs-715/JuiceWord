@@ -139,12 +139,9 @@ export class VisualRequirementController {
   }
 
   private async captureElement(element: HTMLElement): Promise<void> {
-    try {
-      const context = readSelectedElementContext(element);
-      await setLatestVisualRequirementContext(context);
-    } finally {
-      this.setEnabled(false);
-    }
+    const context = readSelectedElementContext(element);
+    this.setEnabled(false);
+    await setLatestVisualRequirementContext(context);
   }
 }
 
