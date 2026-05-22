@@ -125,7 +125,11 @@ export default function App() {
 
             return (
               <article className={`${isCompared ? 'active' : ''} ${isConfigured ? '' : 'incomplete'}`} key={profile.id}>
-                <button type="button" onClick={() => void handleModelToggle(profile.id)}>
+                <button
+                  type="button"
+                  aria-pressed={isCompared}
+                  onClick={() => void handleModelToggle(profile.id)}
+                >
                   <span>{profile.name.slice(0, 1).toUpperCase()}</span>
                   <strong>{profile.name}</strong>
                   <small>{isConfigured ? profile.model : t.incompleteModelProfile}</small>

@@ -84,7 +84,12 @@ export async function setVisualRequirementModeForActiveTab(
   const response = await sendVisualRequirementModeMessage(tabId, enabled);
 
   if (response.ok && response.enabled) {
-    await openSidePanelForTab(tabId);
+    const sidePanelResponse = await openSidePanelForTab(tabId);
+
+    if (!sidePanelResponse.ok) {
+      await sendVisualRequirementModeMessage(tabId, false);
+      return sidePanelResponse;
+    }
   }
 
   return response;
@@ -255,12 +260,25 @@ type SidePanelApi = {
   open?: (options: { tabId: number }) => Promise<void> | void;
 };
 
-async function openSidePanelForTab(tabId: number): Promise<void> {
+async function openSidePanelForTab(tabId: number): Promise<VisualRequirementModeResponse> {
   const sidePanel = browser.sidePanel as SidePanelApi | undefined;
 
   if (!sidePanel?.open) {
-    return;
+    return {
+      ok: false,
+      error: 'Unable to open the visual requirement side panel.',
+    };
   }
 
-  await sidePanel.open({ tabId });
+  try {
+    await sidePanel.open({ tabId });
+    return { ok: true, enabled: true };
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      error: error instanceof Error
+        ? `Unable to open the visual requirement side panel: ${error.message}`
+        : 'Unable to open the visual requirement side panel.',
+    };
+  }
 }
