@@ -1,13 +1,27 @@
 import { browser } from 'wxt/browser';
 import {
+  BACKGROUND_GENERATE_VISUAL_REQUIREMENT,
+  BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT,
+  BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT,
   BACKGROUND_TRANSLATE_ELEMENT_TEXT,
   BACKGROUND_TRANSLATE_TEXT,
   CONTENT_SET_ELEMENT_TRANSLATE_MODE,
+  CONTENT_SET_VISUAL_REQUIREMENT_MODE,
+  type BackgroundGenerateVisualRequirementMessage,
+  type BackgroundGetVisualRequirementContextMessage,
+  type BackgroundSetVisualRequirementContextMessage,
   type BackgroundTranslateElementTextMessage,
   type BackgroundTranslateTextMessage,
   type ElementTranslateModeResponse,
   type TranslateTextResponse,
+  type VisualRequirementContextResponse,
+  type VisualRequirementGenerateResponse,
+  type VisualRequirementModeResponse,
 } from './messageTypes';
+import type {
+  SelectedElementContext,
+  VisualRequirementGenerateRequest,
+} from '../visual-requirement/visualRequirementTypes';
 
 export async function requestTranslation(
   payload: BackgroundTranslateTextMessage['payload'],
@@ -31,7 +45,7 @@ export async function setElementTranslateModeForActiveTab(
   enabled: boolean,
 ): Promise<ElementTranslateModeResponse> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  const tabId = getValidElementTranslateTabId(tab);
+  const tabId = getValidInjectableTabId(tab);
 
   if (tabId === null) {
     return { ok: false, error: 'No active tab found.' };
@@ -48,10 +62,58 @@ export async function setElementTranslateModeForActiveTab(
 
 export async function canUseElementTranslateOnActiveTab(): Promise<boolean> {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  return getValidElementTranslateTabId(tab) !== null;
+  return getValidInjectableTabId(tab) !== null;
 }
 
-function isElementTranslateModeResponse(value: unknown): value is ElementTranslateModeResponse {
+export async function setVisualRequirementModeForActiveTab(
+  enabled: boolean,
+): Promise<VisualRequirementModeResponse> {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  const tabId = getValidInjectableTabId(tab);
+
+  if (tabId === null) {
+    return { ok: false, error: 'No supported active tab found.' };
+  }
+
+  const injected = await injectContentScript(tabId);
+
+  if (!injected.ok) {
+    return injected;
+  }
+
+  return sendVisualRequirementModeMessage(tabId, enabled);
+}
+
+export async function canUseVisualRequirementOnActiveTab(): Promise<boolean> {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  return getValidInjectableTabId(tab) !== null;
+}
+
+export async function setLatestVisualRequirementContext(
+  context: SelectedElementContext,
+): Promise<VisualRequirementContextResponse> {
+  return browser.runtime.sendMessage({
+    type: BACKGROUND_SET_VISUAL_REQUIREMENT_CONTEXT,
+    payload: { context },
+  } satisfies BackgroundSetVisualRequirementContextMessage);
+}
+
+export async function getLatestVisualRequirementContext(): Promise<VisualRequirementContextResponse> {
+  return browser.runtime.sendMessage({
+    type: BACKGROUND_GET_VISUAL_REQUIREMENT_CONTEXT,
+  } satisfies BackgroundGetVisualRequirementContextMessage);
+}
+
+export async function generateVisualRequirement(
+  payload: VisualRequirementGenerateRequest,
+): Promise<VisualRequirementGenerateResponse> {
+  return browser.runtime.sendMessage({
+    type: BACKGROUND_GENERATE_VISUAL_REQUIREMENT,
+    payload,
+  } satisfies BackgroundGenerateVisualRequirementMessage);
+}
+
+function isModeResponse(value: unknown): value is ElementTranslateModeResponse | VisualRequirementModeResponse {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -70,7 +132,33 @@ async function sendElementTranslateModeMessage(
       payload: { enabled },
     });
 
-    if (isElementTranslateModeResponse(response)) {
+    if (isModeResponse(response)) {
+      return response;
+    }
+
+    return {
+      ok: false,
+      error: 'The active tab did not respond.',
+    };
+  } catch (error: unknown) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unable to contact the active tab.',
+    };
+  }
+}
+
+async function sendVisualRequirementModeMessage(
+  tabId: number,
+  enabled: boolean,
+): Promise<VisualRequirementModeResponse> {
+  try {
+    const response = await browser.tabs.sendMessage(tabId, {
+      type: CONTENT_SET_VISUAL_REQUIREMENT_MODE,
+      payload: { enabled },
+    });
+
+    if (isModeResponse(response)) {
       return response;
     }
 
@@ -98,7 +186,7 @@ function isValidTabId(tabId: number | undefined): tabId is number {
   return typeof tabId === 'number' && tabId >= 0;
 }
 
-function getValidElementTranslateTabId(tab: { id?: number; url?: string } | undefined): number | null {
+function getValidInjectableTabId(tab: { id?: number; url?: string } | undefined): number | null {
   if (!tab || !isValidTabId(tab.id) || !canInjectContentScript(tab.url)) {
     return null;
   }
@@ -121,7 +209,9 @@ function isRestrictedExtensionPage(url: string): boolean {
   }
 }
 
-async function injectContentScript(tabId: number): Promise<ElementTranslateModeResponse> {
+async function injectContentScript(
+  tabId: number,
+): Promise<ElementTranslateModeResponse | VisualRequirementModeResponse> {
   try {
     await browser.scripting.executeScript({
       target: { tabId },
