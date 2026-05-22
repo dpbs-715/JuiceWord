@@ -73,7 +73,7 @@ export interface BackgroundGenerateVisualRequirementMessage {
 export interface VisualRequirementContextUpdatedMessage {
   type: typeof VISUAL_REQUIREMENT_CONTEXT_UPDATED;
   payload: {
-    context: SelectedElementContext;
+    contextId: string;
   };
 }
 

@@ -65,13 +65,7 @@ export default function App() {
       }
 
       setCopyStatus('idle');
-      setState((current) => {
-        if (current.status === 'generating') {
-          return current;
-        }
-
-        return { status: 'ready', context: message.payload.context };
-      });
+      void refreshContext();
     };
 
     const handleStorageChange = (
@@ -245,7 +239,7 @@ function isVisualRequirementContextUpdatedMessage(
     isRecord(message) &&
     message.type === VISUAL_REQUIREMENT_CONTEXT_UPDATED &&
     isRecord(message.payload) &&
-    isRecord(message.payload.context)
+    typeof message.payload.contextId === 'string'
   );
 }
 

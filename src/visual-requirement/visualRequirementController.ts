@@ -154,7 +154,7 @@ export class VisualRequirementController {
 
     void browser.runtime.sendMessage({
       type: VISUAL_REQUIREMENT_CONTEXT_UPDATED,
-      payload: { context },
+      payload: { contextId: context.id },
     } satisfies VisualRequirementContextUpdatedMessage).catch(() => undefined);
   }
 }
