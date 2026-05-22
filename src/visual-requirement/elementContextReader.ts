@@ -10,11 +10,11 @@ export function readSelectedElementContext(element: HTMLElement): SelectedElemen
   const style = window.getComputedStyle(element);
 
   return {
-    id: crypto.randomUUID(),
+    id: createContextId(),
     capturedAt: Date.now(),
     page: {
       title: document.title,
-      url: window.location.href,
+      url: readSanitizedPageUrl(),
     },
     element: {
       tagName: element.tagName.toLowerCase(),
@@ -74,4 +74,26 @@ function getReadableText(element: HTMLElement): string {
   }
 
   return `${text.slice(0, VISUAL_REQUIREMENT_TEXT_LIMIT)}...`;
+}
+
+function createContextId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const values = crypto.getRandomValues(new Uint32Array(4));
+    return Array.from(values, (value) => value.toString(16).padStart(8, '0')).join('-');
+  }
+
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function readSanitizedPageUrl(): string {
+  try {
+    const url = new URL(window.location.href);
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return window.location.origin || '';
+  }
 }
