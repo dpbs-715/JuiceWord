@@ -6,12 +6,14 @@ export interface ModelProfile {
   baseUrl: string;
   apiKey: string;
   model: string;
+  temperature?: number;
 }
 
 export interface ExtensionConfig {
   baseUrl: string;
   apiKey: string;
   model: string;
+  temperature: number;
   targetLanguage: string;
   uiLanguage: AppLocale;
   activeModelProfileId: string;

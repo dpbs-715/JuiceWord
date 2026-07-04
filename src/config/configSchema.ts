@@ -7,6 +7,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
   baseUrl: DEFAULT_BASE_URL,
   apiKey: '',
   model: 'deepseek-chat',
+  temperature: 1,
   targetLanguage: DEFAULT_TARGET_LANGUAGE,
   uiLanguage: DEFAULT_UI_LANGUAGE,
   activeModelProfileId: DEFAULT_MODEL_PROFILE_ID,
@@ -19,6 +20,7 @@ export const DEFAULT_CONFIG: ExtensionConfig = {
       baseUrl: DEFAULT_BASE_URL,
       apiKey: '',
       model: 'deepseek-chat',
+      temperature: 1,
     },
   ],
 };
@@ -42,6 +44,7 @@ export function normalizeConfig(config?: Partial<ExtensionConfig>): ExtensionCon
     baseUrl: activeModelProfile.baseUrl,
     apiKey: activeModelProfile.apiKey,
     model: activeModelProfile.model,
+    temperature: activeModelProfile.temperature ?? DEFAULT_CONFIG.temperature,
     targetLanguage: normalizeTargetLanguage(config?.targetLanguage),
     uiLanguage: config?.uiLanguage === 'zh-CN' ? 'zh-CN' : DEFAULT_CONFIG.uiLanguage,
     activeModelProfileId,
@@ -65,6 +68,7 @@ function normalizeModelProfiles(config?: Partial<ExtensionConfig>): ModelProfile
       baseUrl: config?.baseUrl?.trim() || DEFAULT_CONFIG.baseUrl,
       apiKey: config?.apiKey?.trim() || DEFAULT_CONFIG.apiKey,
       model: config?.model?.trim() || DEFAULT_CONFIG.model,
+      temperature: config?.temperature ?? DEFAULT_CONFIG.temperature,
     },
   ];
 }
@@ -78,6 +82,7 @@ function normalizeModelProfile(profile: Partial<ModelProfile>, index: number): M
     baseUrl: profile.baseUrl?.trim() || DEFAULT_CONFIG.baseUrl,
     apiKey: profile.apiKey?.trim() || DEFAULT_CONFIG.apiKey,
     model: profile.model?.trim() || DEFAULT_CONFIG.model,
+    temperature: profile.temperature ?? DEFAULT_CONFIG.temperature,
   };
 }
 

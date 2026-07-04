@@ -123,6 +123,7 @@ export default function App() {
         baseUrl: nextProfile.baseUrl,
         apiKey: nextProfile.apiKey,
         model: nextProfile.model,
+        temperature: nextProfile.temperature ?? DEFAULT_CONFIG.temperature,
         modelProfiles: nextProfiles,
       };
     });
@@ -140,6 +141,7 @@ export default function App() {
         baseUrl: nextProfile.baseUrl,
         apiKey: nextProfile.apiKey,
         model: nextProfile.model,
+        temperature: nextProfile.temperature ?? DEFAULT_CONFIG.temperature,
       };
     });
   }
@@ -154,6 +156,7 @@ export default function App() {
         baseUrl: current.baseUrl,
         apiKey: current.apiKey,
         model: current.model,
+        temperature: current.temperature,
       };
 
       return {
@@ -194,6 +197,7 @@ export default function App() {
         baseUrl: nextProfile.baseUrl,
         apiKey: nextProfile.apiKey,
         model: nextProfile.model,
+        temperature: nextProfile.temperature ?? DEFAULT_CONFIG.temperature,
         comparisonModelProfileIds:
           nextComparisonIds.length > 0 ? nextComparisonIds : [nextProfile.id],
         modelProfiles: nextProfiles,
@@ -321,6 +325,24 @@ export default function App() {
                         onChange={(event) => updateActiveProfile({ model: event.target.value })}
                       />
                       <small>{t.modelExample}</small>
+                    </label>
+
+                    <label>
+                      <span>{t.temperature}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value={activeProfile.temperature ?? DEFAULT_CONFIG.temperature}
+                        placeholder="1"
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          const temperature = value === '' ? DEFAULT_CONFIG.temperature : Number(value);
+                          updateActiveProfile({ temperature });
+                        }}
+                      />
+                      <small>{t.temperatureExample}</small>
                     </label>
                   </div>
 

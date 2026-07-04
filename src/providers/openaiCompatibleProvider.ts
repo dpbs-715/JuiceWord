@@ -33,7 +33,7 @@ export class OpenAICompatibleProvider implements TranslationProvider {
       },
       body: JSON.stringify({
         model: config.model,
-        temperature: 0.2,
+        temperature: config.temperature ?? 1,
         messages: [
           {
             role: 'system',

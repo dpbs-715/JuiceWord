@@ -87,6 +87,7 @@ async function translateWithProfile(
     baseUrl: profile.baseUrl,
     apiKey: profile.apiKey,
     model: profile.model,
+    temperature: profile.temperature ?? config.temperature,
   };
 
   try {
